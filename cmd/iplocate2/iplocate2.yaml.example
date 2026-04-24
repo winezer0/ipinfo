@@ -1,0 +1,30 @@
+# iplocate2 配置文件
+# 支持多数据库同时查询，输出统一JSON格式
+
+# ==================== IP地理位置数据库配置 ====================
+# 支持配置多个数据库，将同时查询所有数据库并返回结果
+ip_locate_dbs:
+  # - "assets/qqwry.dat"
+  # - "assets/zxipv6wry.db"
+  # - "assets/ip2region.xdb"
+  # - "assets/GeoLite2-City.mmdb"
+  # - "assets/ipip.ipdb"
+
+# ==================== 支持的数据库格式 ====================
+# IP地理位置数据库支持格式:
+#   - .xdb  (IP2Region格式)
+#   - .mmdb (MaxMind DB格式，如 GeoLite2-City.mmdb, DBIP-City.mmdb)
+#   - .ipdb (IPIP.net格式)
+#   - .db   (纯真数据库格式)
+#   - .dat  (纯真数据库格式，如 qqwry.dat)
+
+# ==================== 配置示例 ====================
+# 示例1: 使用纯真数据库和IP2Region同时查询
+# ip_locate_dbs:
+#   - "assets/qqwry.dat"
+#   - "assets/ip2region.xdb"
+#
+# 示例2: 使用多个MMDB数据库
+# ip_locate_dbs:
+#   - "assets/GeoLite2-City.mmdb"
+#   - "assets/DBIP-City.mmdb"

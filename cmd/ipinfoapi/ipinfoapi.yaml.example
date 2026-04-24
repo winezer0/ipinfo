@@ -1,0 +1,58 @@
+# iplocateapi 配置文件
+
+# ==================== 认证配置 ====================
+auth:
+  token: "your-secret-token-123456"
+  enable: false
+
+# ==================== HTTP服务配置 ====================
+http:
+  enable: true
+  port: 8080
+  https: false
+  cert_file: "server.crt"
+  key_file: "server.key"
+  read_timeout: 10    # 读取超时（秒）
+  write_timeout: 10   # 写入超时（秒）
+  idle_timeout: 30    # 空闲连接超时（秒）
+
+# ==================== 数据库配置 ====================
+# 数据库路径支持绝对路径和相对路径（相对于可执行文件所在目录）
+database:
+  # ASN数据库配置（任选其一）
+  asn_ipv_x_db: "../assets/geolite2-asn.mmdb"
+  asn_ipv4_db: "../assets/geolite2-asn-ipv4.mmdb"
+  asn_ipv6_db: "../assets/geolite2-asn-ipv6.mmdb"
+
+  # IP地理位置数据库配置（任选其一）
+  ipv_x_locate_db: ""
+  ipv4_locate_db: "../assets/qqwry.dat"
+  ipv6_locate_db: "../assets/zxipv6wry.db"
+
+# ==================== 日志配置 ====================
+log:
+  level: "info"           # 日志级别: debug/info/warn/error
+  file: "logs/iplocateapi.log"  # 日志文件路径
+  console: "TLCM"         # 控制台输出格式: T=时间 L=级别 C=调用者 M=消息, off=关闭
+  max_size: 100           # 单个日志文件最大大小（MB）
+  max_backups: 3          # 保留旧日志文件的最大个数
+
+# ==================== 可选数据库说明 ====================
+# ASN数据库选项:
+#   - assets/geolite2-asn.mmdb         (GeoLite2 ASN通用库)
+#   - assets/geolite2-asn-ipv4.mmdb    (GeoLite2 ASN IPv4库)
+#   - assets/geolite2-asn-ipv6.mmdb    (GeoLite2 ASN IPv6库)
+#   - assets/dbip-asn.mmdb             (DBIP ASN通用库)
+#   - assets/dbip-asn-ipv4.mmdb        (DBIP ASN IPv4库)
+#   - assets/dbip-asn-ipv6.mmdb        (DBIP ASN IPv6库)
+#
+# IP地理位置数据库选项:
+#   - assets/qqwry.dat                 (纯真IPv4数据库)
+#   - assets/qqwry.ipdb                (IPIP.net格式纯真库)
+#   - assets/zxipv6wry.db              (紫薇IPv6数据库)
+#   - assets/ip2region_v4.xdb          (IP2Region IPv4库)
+#   - assets/ip2region_v6.xdb          (IP2Region IPv6库)
+#   - assets/geolite2-city-ipv4.mmdb   (GeoLite2 City IPv4库)
+#   - assets/geolite2-city-ipv6.mmdb   (GeoLite2 City IPv6库)
+#   - assets/dbip-city-ipv4.mmdb       (DBIP City IPv4库)
+#   - assets/dbip-city-ipv6.mmdb       (DBIP City IPv6库)

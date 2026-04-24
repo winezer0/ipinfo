@@ -1,0 +1,28 @@
+auth:
+  token: "test-token-123456"
+  enable: true
+
+http:
+  enable: true
+  port: 8080
+  https: false
+  cert_file: "server.crt"
+  key_file: "server.key"
+  read_timeout: 10
+  write_timeout: 10
+  idle_timeout: 30
+
+database:
+  asn_ipv_x_db: "../../assets/geolite2-asn.mmdb"
+  asn_ipv4_db: ""
+  asn_ipv6_db: ""
+  ipv_x_locate_db: ""
+  ipv4_locate_db: "../../assets/qqwry.dat"
+  ipv6_locate_db: "../../assets/zxipv6wry.db"
+
+log:
+  level: "info"
+  file: ""
+  console: "TLCM"
+  max_size: 100
+  max_backups: 3
