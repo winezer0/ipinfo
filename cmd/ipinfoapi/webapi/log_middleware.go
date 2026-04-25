@@ -1,7 +1,7 @@
 package webapi
 
 import (
-	"github.com/winezer0/ipinfo/pkg/logging"
+	"github.com/winezer0/xutils/logging"
 	"net/http"
 	"time"
 )
@@ -21,12 +21,6 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		logging.Infow("Request completed",
-			"ip", clientIP,
-			"method", method,
-			"path", path,
-			"status", rw.statusCode,
-			"duration_ms", duration.Milliseconds(),
-		)
+		logging.Infof("Request completed ip:%v method:%v path:%v status:%v duration_ms:%v", clientIP, method, path, rw.statusCode, duration.Milliseconds())
 	})
 }

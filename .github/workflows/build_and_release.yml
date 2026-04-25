@@ -8,6 +8,9 @@ on:
         required: true
         default: '0.0.1'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: windows-latest
@@ -30,15 +33,15 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Go 1.23.x
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: 1.23.x
 
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
@@ -70,7 +73,7 @@ jobs:
     
     steps:
     - name: Download all artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         path: ./artifacts
 
@@ -78,7 +81,7 @@ jobs:
       run: |
         echo "Current directory: $(pwd)"
         echo "Artifacts directory contents:"
-        Get-ChildItem -Path "./artifacts" -Recurse | Format-Table Name, FullName
+        Get-ChildItem -Path "./artifacts" -Recurse -File | ForEach-Object { echo $_.FullName }
 
     - name: Get current date
       id: date
@@ -88,7 +91,7 @@ jobs:
         echo "Build date: $buildDate"
 
     - name: Create release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ github.event.inputs.version }}
         name: Release v${{ github.event.inputs.version }}
@@ -98,7 +101,7 @@ jobs:
           ### 构建信息
           - 版本号: ${{ github.event.inputs.version }}
           - 构建日期: ${{ steps.date.outputs.builddate }}
-          - 构建平台: Windows & Linux
+          - 构建平台: Windows & Linux & macOS
           - Go版本: 1.23.x
           
           ### 下载
@@ -106,11 +109,7 @@ jobs:
           - Linux (AMD64): `ipinfoapi-linux-amd64`
           - macOS (Intel/AMD64): `ipinfoapi-darwin-amd64`
           - macOS (Apple Silicon/ARM64): `ipinfoapi-darwin-arm64`
-        files: |
-          ./artifacts/ipinfoapi-windows-amd64.exe/ipinfo-windows-amd64.exe
-          ./artifacts/ipinfoapi-linux-amd64/ipinfo-linux-amd64
-          ./artifacts/ipinfoapi-darwin-amd64/ipinfo-darwin-amd64
-          ./artifacts/ipinfoapi-darwin-arm64/ipinfo-darwin-arm64
+        files: ./artifacts/**/*
         draft: false
         prerelease: false
       env:

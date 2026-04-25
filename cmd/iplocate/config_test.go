@@ -11,10 +11,10 @@ func TestLoadConfig(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "iplocate.yaml")
 	configContent := `
-asn_ipv_x_db: "assets/test-asn.mmdb"
+asn_ipvx_db: "assets/test-asn.mmdb"
 asn_ipv4_db: "assets/test-asn-v4.mmdb"
 asn_ipv6_db: "assets/test-asn-v6.mmdb"
-ipv_x_locate_db: "assets/test-locate.mmdb"
+ipvx_locate_db: "assets/test-locate.mmdb"
 ipv4_locate_db: "assets/test-v4.db"
 ipv6_locate_db: "assets/test-v6.db"
 `
@@ -104,7 +104,7 @@ func TestLoadConfig_InvalidYAML(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "iplocate.yaml")
 	invalidContent := `
-asn_ipv_x_db: [invalid yaml
+asn_ipvx_db: [invalid yaml
   - this is not valid
 `
 	if err := os.WriteFile(configPath, []byte(invalidContent), 0644); err != nil {

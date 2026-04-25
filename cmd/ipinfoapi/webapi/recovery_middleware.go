@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/winezer0/ipinfo/pkg/logging"
+	"github.com/winezer0/xutils/logging"
 )
 
 // RecoveryMiddleware 异常恢复中间件，防止panic导致服务崩溃
@@ -13,12 +13,7 @@ func RecoveryMiddleware(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				stack := debug.Stack()
-				logging.Errorw("Panic recovered",
-					"error", err,
-					"stack", string(stack),
-					"path", r.URL.Path,
-					"method", r.Method,
-				)
+				logging.Errorf("Panic recovered error:%v stack:%v path:%v method:%v", err, string(stack), r.URL.Path, r.Method)
 				WriteError(w, http.StatusInternalServerError, CodeInternalErr, "服务器内部错误")
 			}
 		}()

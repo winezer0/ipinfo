@@ -257,7 +257,7 @@ http:
   idle_timeout: 30
 
 database:
-  asn_ipv_x_db: "assets/geolite2-asn.mmdb"
+  asn_ipvx_db: "assets/geolite2-asn.mmdb"
   ipv4_locate_db: "assets/qqwry.dat"
   ipv6_locate_db: "assets/zxipv6wry.db"
 

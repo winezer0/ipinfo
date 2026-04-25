@@ -11,12 +11,12 @@ import (
 // AppConfig 应用程序配置结构体
 type AppConfig struct {
 	// ASN数据库配置
-	AsnIpvxDb string `yaml:"asn_ipv_x_db"`
+	AsnIpvxDb string `yaml:"asn_ipvx_db"`
 	AsnIpv4Db string `yaml:"asn_ipv4_db"`
 	AsnIpv6Db string `yaml:"asn_ipv6_db"`
 
 	// IP地理位置数据库配置
-	IpvxLocateDb string `yaml:"ipv_x_locate_db"`
+	IpvxLocateDb string `yaml:"ipvx_locate_db"`
 	Ipv4LocateDb string `yaml:"ipv4_locate_db"`
 	Ipv6LocateDb string `yaml:"ipv6_locate_db"`
 }

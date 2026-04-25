@@ -6,14 +6,14 @@
 
 # 通用ASN数据库（同时支持IPv4和IPv6）
 # 当专用的 asn_ipv4_db 或 asn_ipv6_db 未配置时，将使用此数据库
-asn_ipv_x_db: ""
+asn_ipvx_db: ""
 
 # IPv4专用ASN数据库
-# 优先级高于 asn_ipv_x_db
+# 优先级高于 asn_ipvx_db
 asn_ipv4_db: ""
 
 # IPv6专用ASN数据库
-# 优先级高于 asn_ipv_x_db
+# 优先级高于 asn_ipvx_db
 asn_ipv6_db: ""
 
 # ==================== IP地理位置数据库配置 ====================
@@ -21,14 +21,14 @@ asn_ipv6_db: ""
 
 # 通用IP地理位置数据库（同时支持IPv4和IPv6）
 # 当专用的 ipv4_locate_db 或 ipv6_locate_db 未配置时，将使用此数据库
-ipv_x_locate_db: ""
+ipvx_locate_db: ""
 
 # IPv4专用IP地理位置数据库
-# 优先级高于 ipv_x_locate_db
+# 优先级高于 ipvx_locate_db
 ipv4_locate_db: ""
 
 # IPv6专用IP地理位置数据库
-# 优先级高于 ipv_x_locate_db
+# 优先级高于 ipvx_locate_db
 ipv6_locate_db: ""
 
 # ==================== 支持的数据库格式 ====================
@@ -45,13 +45,13 @@ ipv6_locate_db: ""
 
 # ==================== 配置示例 ====================
 # 示例1: 使用纯真数据库查询IPv4，ZXWry查询IPv6
-# asn_ipv_x_db: "assets/GeoLite2-ASN.mmdb"
+# asn_ipvx_db: "assets/GeoLite2-ASN.mmdb"
 # ipv4_locate_db: "assets/qqwry.dat"
 # ipv6_locate_db: "assets/zxipv6wry.db"
 #
 # 示例2: 使用通用数据库同时支持IPv4和IPv6
-# asn_ipv_x_db: "assets/GeoLite2-ASN.mmdb"
-# ipv_x_locate_db: "assets/GeoLite2-City.mmdb"
+# asn_ipvx_db: "assets/GeoLite2-ASN.mmdb"
+# ipvx_locate_db: "assets/GeoLite2-City.mmdb"
 #
 # 示例3: 使用IP2Region数据库
 # ipv4_locate_db: "assets/ip2region.xdb"
