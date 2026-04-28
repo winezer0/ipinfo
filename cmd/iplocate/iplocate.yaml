@@ -6,30 +6,30 @@
 
 # 通用ASN数据库（同时支持IPv4和IPv6）
 # 当专用的 asn_ipv4_db 或 asn_ipv6_db 未配置时，将使用此数据库
-asn_ipvx_db: ""
+asn_ipvx_db: "geolite2-asn.mmdb"
 
 # IPv4专用ASN数据库
 # 优先级高于 asn_ipvx_db
-asn_ipv4_db: ""
+asn_ipv4_db: "geolite2-asn-ipv4.mmdb"
 
 # IPv6专用ASN数据库
 # 优先级高于 asn_ipvx_db
-asn_ipv6_db: ""
+asn_ipv6_db: "geolite2-asn-ipv6.mmdb"
 
 # ==================== IP地理位置数据库配置 ====================
 # IP地理位置数据库用于查询IP的物理位置信息
 
 # 通用IP地理位置数据库（同时支持IPv4和IPv6）
 # 当专用的 ipv4_locate_db 或 ipv6_locate_db 未配置时，将使用此数据库
-ipvx_locate_db: ""
+ipvx_locate_db: "qqwry.ipdb"
 
 # IPv4专用IP地理位置数据库
 # 优先级高于 ipvx_locate_db
-ipv4_locate_db: ""
+ipv4_locate_db: "ip2region_v4.xdb"
 
 # IPv6专用IP地理位置数据库
 # 优先级高于 ipvx_locate_db
-ipv6_locate_db: ""
+ipv6_locate_db: "ip2region_v6.xdb"
 
 # ==================== 支持的数据库格式 ====================
 # ASN数据库支持格式:

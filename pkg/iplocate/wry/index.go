@@ -18,18 +18,21 @@ func (db *IPDB[uint32]) SearchIndexV4(ip uint32) uint32 {
 	maxIterations := int((r-l)/entryLen) + 1
 	iterations := 0
 
+	// 记录最后一个小于等于目标IP的索引位置
+	var lastValidOffset uint32
+
 	for l+entryLen <= r {
 		// 安全检查：防止死循环
 		iterations++
 		if iterations > maxIterations {
-			return 0
+			break
 		}
 
 		mid = (r-l)/entryLen/2*entryLen + l
 
 		// 边界检查
 		if mid+entryLen > uint32(len(db.Data)) {
-			return 0
+			break
 		}
 
 		buf = db.Data[mid : mid+entryLen]
@@ -38,8 +41,11 @@ func (db *IPDB[uint32]) SearchIndexV4(ip uint32) uint32 {
 		if ipc > ip {
 			r = mid
 		} else if ipc < ip {
+			// 记录当前偏移，继续向右查找
+			lastValidOffset = uint32(Bytes3ToUint32(buf[ipLen:entryLen]))
 			l = mid
 		} else {
+			// 精确匹配
 			return uint32(Bytes3ToUint32(buf[ipLen:entryLen]))
 		}
 	}
@@ -47,10 +53,13 @@ func (db *IPDB[uint32]) SearchIndexV4(ip uint32) uint32 {
 	// 处理最后一个条目
 	if l+entryLen <= uint32(len(db.Data)) {
 		buf = db.Data[l : l+entryLen]
-		return uint32(Bytes3ToUint32(buf[ipLen:entryLen]))
+		ipc = uint32(binary.LittleEndian.Uint32(buf[:ipLen]))
+		if ipc <= ip {
+			lastValidOffset = uint32(Bytes3ToUint32(buf[ipLen:entryLen]))
+		}
 	}
 
-	return 0
+	return lastValidOffset
 }
 
 // SearchIndexV6 在IPv6索引中二分查找IP地址
@@ -66,18 +75,21 @@ func (db *IPDB[uint64]) SearchIndexV6(ip uint64) uint32 {
 	maxIterations := int((r-l)/entryLen) + 1
 	iterations := 0
 
+	// 记录最后一个小于等于目标IP的索引位置
+	var lastValidOffset uint32
+
 	for l+entryLen <= r {
 		// 安全检查：防止死循环
 		iterations++
 		if iterations > maxIterations {
-			return 0
+			break
 		}
 
 		mid = (r-l)/entryLen/2*entryLen + l
 
 		// 边界检查
 		if mid+entryLen > uint64(len(db.Data)) {
-			return 0
+			break
 		}
 
 		buf = db.Data[mid : mid+entryLen]
@@ -86,8 +98,11 @@ func (db *IPDB[uint64]) SearchIndexV6(ip uint64) uint32 {
 		if ipc > ip {
 			r = mid
 		} else if ipc < ip {
+			// 记录当前偏移，继续向右查找
+			lastValidOffset = Bytes3ToUint32(buf[ipLen:entryLen])
 			l = mid
 		} else {
+			// 精确匹配
 			return Bytes3ToUint32(buf[ipLen:entryLen])
 		}
 	}
@@ -95,8 +110,11 @@ func (db *IPDB[uint64]) SearchIndexV6(ip uint64) uint32 {
 	// 处理最后一个条目
 	if l+entryLen <= uint64(len(db.Data)) {
 		buf = db.Data[l : l+entryLen]
-		return Bytes3ToUint32(buf[ipLen:entryLen])
+		ipc = uint64(binary.LittleEndian.Uint64(buf[:ipLen]))
+		if ipc <= ip {
+			lastValidOffset = Bytes3ToUint32(buf[ipLen:entryLen])
+		}
 	}
 
-	return 0
+	return lastValidOffset
 }

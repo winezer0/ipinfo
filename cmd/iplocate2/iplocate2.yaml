@@ -4,11 +4,11 @@
 # ==================== IP地理位置数据库配置 ====================
 # 支持配置多个数据库，将同时查询所有数据库并返回结果
 ip_locate_dbs:
-  # - "assets/qqwry.dat"
-  # - "assets/zxipv6wry.db"
-  # - "assets/ip2region.xdb"
-  # - "assets/GeoLite2-City.mmdb"
-  # - "assets/ipip.ipdb"
+  - "assets/qqwry.dat"
+  - "assets/zxipv6wry.db"
+  - "assets/ip2region.xdb"
+  - "assets/GeoLite2-City.mmdb"
+  - "assets/ipip.ipdb"
 
 # ==================== 支持的数据库格式 ====================
 # IP地理位置数据库支持格式:

@@ -2,9 +2,10 @@ package queryip
 
 import (
 	"errors"
+	"sync"
+
 	"github.com/winezer0/ipinfo/pkg/asninfo"
 	"github.com/winezer0/ipinfo/pkg/iputils"
-	"sync"
 )
 
 const (
@@ -23,22 +24,22 @@ func (engine *DBEngine) QueryIPInfo(ipv4s []string, ipv6s []string) (*IPDbInfo, 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
-	workerPoolSize := defaultWorkerPoolSize
-	if len(ipv4s) < workerPoolSize {
-		workerPoolSize = len(ipv4s)
-	}
-	if len(ipv6s) < workerPoolSize && len(ipv6s) > 0 {
-		workerPoolSize = len(ipv6s)
-	}
-
 	if len(ipv4s) > 0 {
+		ipv4WorkerPoolSize := defaultWorkerPoolSize
+		if len(ipv4s) < ipv4WorkerPoolSize {
+			ipv4WorkerPoolSize = len(ipv4s)
+		}
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ipv4Results := processIPsWithWorkerPool(ipv4s, engine.queryIPv4, workerPoolSize)
+			ipv4Results := processIPsWithWorkerPool(ipv4s, engine.queryIPv4, ipv4WorkerPoolSize)
 
 			mu.Lock()
 			for _, result := range ipv4Results {
+				if result == nil {
+					continue
+				}
 				info.IPv4Locations = append(info.IPv4Locations, IPLocation{
 					IP:       result.IP,
 					IPLocate: result.IPLocate,
@@ -52,13 +53,21 @@ func (engine *DBEngine) QueryIPInfo(ipv4s []string, ipv6s []string) (*IPDbInfo, 
 	}
 
 	if len(ipv6s) > 0 {
+		ipv6WorkerPoolSize := defaultWorkerPoolSize
+		if len(ipv6s) < ipv6WorkerPoolSize {
+			ipv6WorkerPoolSize = len(ipv6s)
+		}
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ipv6Results := processIPsWithWorkerPool(ipv6s, engine.queryIPv6, workerPoolSize)
+			ipv6Results := processIPsWithWorkerPool(ipv6s, engine.queryIPv6, ipv6WorkerPoolSize)
 
 			mu.Lock()
 			for _, result := range ipv6Results {
+				if result == nil {
+					continue
+				}
 				info.IPv6Locations = append(info.IPv6Locations, IPLocation{
 					IP:       result.IP,
 					IPLocate: result.IPLocate,
