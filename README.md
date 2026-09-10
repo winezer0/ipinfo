@@ -231,6 +231,8 @@ curl "http://localhost:8080/full?q=8.8.8.8,1.1.1.1,114.114.114.114&token=your-to
 
 将所需的数据库文件放入 `assets/` 目录：
 
+默认数据库文件可从 [cdninfo/assets](https://github.com/winezer0/cdninfo/tree/main/assets) 下载。
+
 ```
 assets/
 ├── qqwry.dat              # 纯真 IP 数据库
