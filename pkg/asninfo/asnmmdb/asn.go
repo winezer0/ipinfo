@@ -1,6 +1,7 @@
 package asnmmdb
 
 import (
+	"context"
 	"fmt"
 	"github.com/winezer0/ipinfo/pkg/asninfo"
 	"github.com/winezer0/ipinfo/pkg/iputils"
@@ -77,6 +78,7 @@ func (m *MMDBManager) Init() error {
 	}
 
 	m.mmDb = conn
+	m.asnIndex, m.asnIndexLoaded = nil, false
 	return nil
 }
 
@@ -91,6 +93,7 @@ func (m *MMDBManager) Close() error {
 		}
 		m.mmDb = nil
 	}
+	m.asnIndex, m.asnIndexLoaded = nil, false
 	return nil
 }
 
@@ -103,42 +106,41 @@ func (m *MMDBManager) IsInitialized() bool {
 
 // FindASN 查询单个IP的ASN信息
 func (m *MMDBManager) FindASN(ipStr string) *asninfo.ASNInfo {
+	info, _ := m.FindASNContext(context.Background(), ipStr)
+	return info
+}
+
+// FindASNContext 等待查询许可并响应取消；过载不会被伪装成未命中。
+func (m *MMDBManager) FindASNContext(ctx context.Context, ipStr string) (*asninfo.ASNInfo, error) {
+	asnInfo := asninfo.NewASNInfo(ipStr, iputils.GetIpVersion(ipStr))
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
-		return &asninfo.ASNInfo{
-			IP:        ipStr,
-			IPVersion: iputils.GetIpVersion(ipStr),
-			FoundASN:  false,
-		}
+		return asnInfo, asninfo.ErrInvalidIPAddress
 	}
 
 	// 获取查询许可
 	select {
 	case m.queryChan <- struct{}{}:
 		defer func() { <-m.queryChan }()
-	default:
-		return &asninfo.ASNInfo{
-			IP:        ipStr,
-			IPVersion: iputils.GetIpVersion(ipStr),
-			FoundASN:  false,
-		}
+	case <-ctx.Done():
+		return asnInfo, ctx.Err()
+	}
+	if err := ctx.Err(); err != nil {
+		return asnInfo, err
 	}
 
-	ipVersion := iputils.GetIpVersion(ipStr)
-	asnInfo := asninfo.NewASNInfo(ipStr, ipVersion)
-
 	m.mu.RLock()
+	defer m.mu.RUnlock()
 	reader := m.mmDb
-	m.mu.RUnlock()
 
 	// 如果数据库未初始化，返回空结果
 	if reader == nil {
-		return asnInfo
+		return asnInfo, asninfo.ErrDatabaseNotInitialized
 	}
 
 	var asnRecord ASNRecord
 	if err := reader.Lookup(ip, &asnRecord); err != nil {
-		return asnInfo
+		return asnInfo, err
 	}
 
 	if asnRecord.AutonomousSystemNumber > 0 {
@@ -147,14 +149,33 @@ func (m *MMDBManager) FindASN(ipStr string) *asninfo.ASNInfo {
 		asnInfo.FoundASN = true
 	}
 
-	return asnInfo
+	return asnInfo, nil
 }
 
 // ASNToIPRanges 通过ASN号反查所有IP段
 func (m *MMDBManager) ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
-	m.ensureASNIndexLoaded()
-
-	m.mu.RLock()
+	for {
+		m.mu.RLock()
+		if m.mmDb == nil {
+			m.mu.RUnlock()
+			return nil, asninfo.ErrDatabaseNotInitialized
+		}
+		if m.asnIndexLoaded {
+			break
+		}
+		m.mu.RUnlock()
+		m.mu.Lock()
+		var err error
+		if m.mmDb == nil {
+			err = asninfo.ErrDatabaseNotInitialized
+		} else {
+			err = m.ensureASNIndexLoaded()
+		}
+		m.mu.Unlock()
+		if err != nil {
+			return nil, err
+		}
+	}
 	defer m.mu.RUnlock()
 
 	indices, exists := m.asnIndex[targetASN]
@@ -163,7 +184,7 @@ func (m *MMDBManager) ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
 	}
 
 	var findIPs []*net.IPNet
-	networks := m.mmDb.Networks()
+	networks := m.mmDb.Networks(maxminddb.SkipAliasedNetworks)
 	currentIdx := 0
 	targetIdx := 0
 	for networks.Next() {
@@ -191,31 +212,20 @@ func (m *MMDBManager) ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
 	return findIPs, nil
 }
 
-// ensureASNIndexLoaded 懒加载ASN索引
-func (m *MMDBManager) ensureASNIndexLoaded() {
-	m.mu.RLock()
+// ensureASNIndexLoaded 构建索引；调用方必须持有写锁。
+func (m *MMDBManager) ensureASNIndexLoaded() error {
 	if m.asnIndexLoaded {
-		m.mu.RUnlock()
-		return
-	}
-	m.mu.RUnlock()
-
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if m.asnIndexLoaded {
-		return
+		return nil
 	}
 
 	m.asnIndex = make(map[uint64][]int)
 	idx := 0
-	networks := m.mmDb.Networks()
+	networks := m.mmDb.Networks(maxminddb.SkipAliasedNetworks)
 	for networks.Next() {
 		var record ASNRecord
 		_, err := networks.Network(&record)
 		if err != nil {
-			idx++
-			continue
+			return fmt.Errorf("%w: %w", asninfo.ErrFailedToParseNetwork, err)
 		}
 		if record.AutonomousSystemNumber > 0 {
 			m.asnIndex[record.AutonomousSystemNumber] = append(
@@ -223,7 +233,11 @@ func (m *MMDBManager) ensureASNIndexLoaded() {
 		}
 		idx++
 	}
+	if err := networks.Err(); err != nil {
+		return fmt.Errorf("%w: %w", asninfo.ErrFailedToIterateNetwork, err)
+	}
 	m.asnIndexLoaded = true
+	return nil
 }
 
 // BatchFindASN 批量查询多个IP的ASN信息

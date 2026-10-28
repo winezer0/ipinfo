@@ -57,6 +57,7 @@ func main() {
 	}
 
 	dbConfig := &queryip.IPDbConfig{
+		XDBPoolSize:  config.XDBPoolSize,
 		AsnIpvxDb:    config.AsnIpvxDb,
 		AsnIpv4Db:    config.AsnIpv4Db,
 		AsnIpv6Db:    config.AsnIpv6Db,

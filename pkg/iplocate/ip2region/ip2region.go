@@ -12,11 +12,18 @@ import (
 
 // IP2Region 实现了统一的IP信息查询接口
 type IP2Region struct {
-	Version  int
-	Searcher *xdb.Searcher
-	mu       sync.RWMutex
-	DbPath   string
+	Version   int
+	Searcher  *xdb.Searcher
+	mu        sync.RWMutex
+	DbPath    string
+	poolSize  int
+	searchers []*xdb.Searcher
+	pool      chan *xdb.Searcher
+	serial    sync.Mutex
 }
+
+// MaxPoolSize limits the number of open database handles per engine.
+const MaxPoolSize = 64
 
 // 确保 IP2Region 实现了 ipinfo.IPInfo 接口
 var _ iplocate.IPInfo = (*IP2Region)(nil)
@@ -25,9 +32,18 @@ var _ iplocate.IPInfo = (*IP2Region)(nil)
 // version: iplocate.IPv4VersionNo 或 iplocate.IPv6VersionNo
 // dbPath: 对应的xdb文件路径
 func NewIP2Region(version int, dbPath string) (*IP2Region, error) {
+	return NewIP2RegionWithPool(version, dbPath, 1)
+}
+
+// NewIP2RegionWithPool shares one immutable VectorIndex across independent Searchers.
+func NewIP2RegionWithPool(version int, dbPath string, size int) (*IP2Region, error) {
+	if size < 1 || size > MaxPoolSize {
+		return nil, fmt.Errorf("XDB pool size must be between 1 and %d", MaxPoolSize)
+	}
 	ipr := &IP2Region{
-		Version: version,
-		DbPath:  dbPath,
+		Version:  version,
+		DbPath:   dbPath,
+		poolSize: size,
 	}
 
 	if err := ipr.Init(); err != nil {
@@ -39,6 +55,11 @@ func NewIP2Region(version int, dbPath string) (*IP2Region, error) {
 
 // Init 初始化数据库连接
 func (ipr *IP2Region) Init() error {
+	return ipr.initWithVector(nil, xdb.NewWithVectorIndex)
+}
+
+// initWithVector publishes the pool only after every handle opens successfully.
+func (ipr *IP2Region) initWithVector(vectorIndex []byte, open func(*xdb.Version, string, []byte) (*xdb.Searcher, error)) error {
 	ipr.mu.Lock()
 	defer ipr.mu.Unlock()
 
@@ -55,13 +76,59 @@ func (ipr *IP2Region) Init() error {
 		return err
 	}
 
-	searcher, err := xdb.NewWithFileOnly(xdbVersion, ipr.DbPath)
-	if err != nil {
-		return fmt.Errorf("创建searcher失败: %w", err)
+	if vectorIndex == nil {
+		vectorIndex, err = xdb.LoadVectorIndexFromFile(ipr.DbPath)
+		if err != nil {
+			return fmt.Errorf("加载VectorIndex失败: %w", err)
+		}
 	}
-
-	ipr.Searcher = searcher
+	if len(vectorIndex) != xdb.VectorIndexRows*xdb.VectorIndexCols*xdb.VectorIndexSize {
+		return fmt.Errorf("invalid VectorIndex length: %d", len(vectorIndex))
+	}
+	size := ipr.poolSize
+	if size == 0 {
+		size = 1
+	}
+	if size < 1 || size > MaxPoolSize {
+		return fmt.Errorf("invalid XDB pool size: %d", size)
+	}
+	searchers := make([]*xdb.Searcher, 0, size)
+	for i := 0; i < size; i++ {
+		searcher, err := open(xdbVersion, ipr.DbPath, vectorIndex)
+		if err != nil {
+			for _, opened := range searchers {
+				opened.Close()
+			}
+			return fmt.Errorf("创建searcher %d/%d 失败: %w", i+1, size, err)
+		}
+		searchers = append(searchers, searcher)
+	}
+	ipr.searchers = searchers
+	ipr.Searcher = searchers[0]
+	if size > 1 {
+		ipr.pool = make(chan *xdb.Searcher, size)
+		for _, searcher := range searchers {
+			ipr.pool <- searcher
+		}
+	}
 	return nil
+}
+
+// NewIP2RegionAuto 从XDB文件头识别IP版本并创建查询器。
+func NewIP2RegionAuto(dbPath string) (*IP2Region, error) {
+	return NewIP2RegionAutoWithPool(dbPath, 1)
+}
+
+func NewIP2RegionAutoWithPool(dbPath string, size int) (*IP2Region, error) {
+	header, err := xdb.LoadHeaderFromFile(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("读取XDB文件头失败: %w", err)
+	}
+	version, err := xdb.VersionFromHeader(header)
+	if err != nil {
+		return nil, err
+	}
+	return NewIP2RegionWithPool(version.Id, dbPath, size)
 }
 
 // IsInitialized 检查数据库是否已初始化
@@ -77,28 +144,36 @@ func (ipr *IP2Region) IsInitialized() bool {
 // dbPath: 对应的xdb文件路径
 // vectorIndex: 预加载的VectorIndex缓存
 func NewIP2RegionWithVectorIndex(version int, dbPath string, vectorIndex []byte) (*IP2Region, error) {
-	// 验证xdb文件
-	if err := xdb.VerifyFromFile(dbPath); err != nil {
-		return nil, fmt.Errorf("xdb文件验证失败: %w", err)
-	}
-
-	// 根据版本号获取对应的Version对象
-	xdbVersion, err := getXdbVersion(version)
-	if err != nil {
+	ipr := &IP2Region{Version: version, DbPath: dbPath, poolSize: 1}
+	if err := ipr.initWithVector(vectorIndex, xdb.NewWithVectorIndex); err != nil {
 		return nil, err
 	}
+	return ipr, nil
+}
 
-	// 创建searcher
-	searcher, err := xdb.NewWithVectorIndex(xdbVersion, dbPath, vectorIndex)
-	if err != nil {
-		return nil, fmt.Errorf("创建searcher失败: %w", err)
+// PoolSize returns the number of currently open Searchers. Searcher is retained
+// for source compatibility; callers must not use it concurrently with this API.
+func (ipr *IP2Region) PoolSize() int {
+	ipr.mu.RLock()
+	defer ipr.mu.RUnlock()
+	return len(ipr.searchers)
+}
+
+// acquire/release require a lifecycle read lock, held until the lease is returned.
+func (ipr *IP2Region) acquire() *xdb.Searcher {
+	if ipr.pool != nil {
+		return <-ipr.pool
 	}
+	ipr.serial.Lock()
+	return ipr.Searcher
+}
 
-	return &IP2Region{
-		Version:  version,
-		DbPath:   dbPath,
-		Searcher: searcher,
-	}, nil
+func (ipr *IP2Region) release(searcher *xdb.Searcher) {
+	if ipr.pool != nil {
+		ipr.pool <- searcher
+		return
+	}
+	ipr.serial.Unlock()
 }
 
 // getXdbVersion 根据整型版本号获取xdb.Version对象
@@ -117,50 +192,28 @@ func getXdbVersion(version int) (*xdb.Version, error) {
 func (ipr *IP2Region) FindFull(query string) *iplocate.IPLocate {
 	ipr.mu.RLock()
 	defer ipr.mu.RUnlock()
-
-	result := &iplocate.IPLocate{
-		IP: query,
-	}
-
-	ip := net.ParseIP(query)
-	if ip == nil {
-		return result
-	}
-
-	if ip.To4() != nil {
-		result.Version = 4
-	} else {
-		result.Version = 6
-	}
-
-	if ipr.Searcher == nil {
-		return result
-	}
-
-	region, err := ipr.Searcher.SearchByStr(query)
-	if err != nil {
-		return result
-	}
-
-	return parseRegionToIPLocate(result, region)
+	searcher := ipr.acquire()
+	defer ipr.release(searcher)
+	return findFull(searcher, query)
 }
 
 // BatchFindFull 批量查询多个IP地址,返回更结构化的地址信息
 func (ipr *IP2Region) BatchFindFull(queries []string) map[string]*iplocate.IPLocate {
 	ipr.mu.RLock()
 	defer ipr.mu.RUnlock()
+	searcher := ipr.acquire()
+	defer ipr.release(searcher)
 
 	results := make(map[string]*iplocate.IPLocate, len(queries))
 
 	for _, query := range queries {
-		results[query] = ipr.findFullInternal(query)
+		results[query] = findFull(searcher, query)
 	}
 
 	return results
 }
 
-// findFullInternal 内部查询方法，不加锁
-func (ipr *IP2Region) findFullInternal(query string) *iplocate.IPLocate {
+func findFull(searcher *xdb.Searcher, query string) *iplocate.IPLocate {
 	result := &iplocate.IPLocate{
 		IP: query,
 	}
@@ -176,11 +229,11 @@ func (ipr *IP2Region) findFullInternal(query string) *iplocate.IPLocate {
 		result.Version = 6
 	}
 
-	if ipr.Searcher == nil {
+	if searcher == nil {
 		return result
 	}
 
-	region, err := ipr.Searcher.SearchByStr(query)
+	region, err := searcher.SearchByStr(query)
 	if err != nil {
 		return result
 	}
@@ -233,10 +286,16 @@ func (ipr *IP2Region) Close() {
 	ipr.mu.Lock()
 	defer ipr.mu.Unlock()
 
-	if ipr.Searcher != nil {
+	if len(ipr.searchers) > 0 {
+		for _, searcher := range ipr.searchers {
+			searcher.Close()
+		}
+	} else if ipr.Searcher != nil {
 		ipr.Searcher.Close()
-		ipr.Searcher = nil
 	}
+	ipr.Searcher = nil
+	ipr.searchers = nil
+	ipr.pool = nil
 }
 
 // LoadVectorIndexFromFile 从文件加载VectorIndex缓存

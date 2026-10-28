@@ -1,22 +1,20 @@
 package zxwry
 
 import (
-	"path/filepath"
-	"runtime"
+	"github.com/winezer0/ipinfo/internal/testassets"
 	"testing"
 )
 
-func getTestDBPath(dbname string) string {
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..", "..")
-	return filepath.Join(projectRoot, "assets", dbname)
+func getTestDBPath(t testing.TB, dbname string) string {
+	t.Helper()
+	return testassets.Path(t, dbname)
 }
 func TestIpv6Location_FindFull(t *testing.T) {
 	// 集成测试：测试完整的查询流程
-	dbpath := getTestDBPath("zxipv6wry.db")
+	dbpath := getTestDBPath(t, "zxipv6wry.db")
 	db, err := NewZXWryDB(dbpath)
 	if err != nil {
-		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
+		t.Fatalf("无法加载集成数据库: %v", err)
 	}
 	defer db.Close()
 
@@ -44,10 +42,10 @@ func TestIpv6Location_FindFull(t *testing.T) {
 }
 
 func TestIpv6Location_BatchFindFull(t *testing.T) {
-	dbpath := getTestDBPath("zxipv6wry.db")
+	dbpath := getTestDBPath(t, "zxipv6wry.db")
 	db, err := NewZXWryDB(dbpath)
 	if err != nil {
-		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
+		t.Fatalf("无法加载集成数据库: %v", err)
 	}
 	defer db.Close()
 
@@ -71,10 +69,10 @@ func TestIpv6Location_BatchFindFull(t *testing.T) {
 }
 
 func TestIpv6Location_GetDatabaseInfo(t *testing.T) {
-	dbpath := getTestDBPath("zxipv6wry.db")
+	dbpath := getTestDBPath(t, "zxipv6wry.db")
 	db, err := NewZXWryDB(dbpath)
 	if err != nil {
-		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
+		t.Fatalf("无法加载集成数据库: %v", err)
 	}
 	defer db.Close()
 
@@ -97,11 +95,11 @@ func TestIpv6Location_GetDatabaseInfo(t *testing.T) {
 
 // TestZXWryFindAndFindFull 测试Find和FindFull方法对比
 func TestZXWryFindAndFindFull(t *testing.T) {
-	dbPath := getTestDBPath("zxipv6wry.db")
+	dbPath := getTestDBPath(t, "zxipv6wry.db")
 
 	db, err := NewZXWryDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 

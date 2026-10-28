@@ -35,10 +35,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v5
 
-    - name: Set up Go 1.23.x
+    - name: Set up Go from go.mod
       uses: actions/setup-go@v5
       with:
-        go-version: 1.23.x
+        go-version-file: go.mod
 
     - name: Cache Go modules
       uses: actions/cache@v4
@@ -102,7 +102,7 @@ jobs:
           - 版本号: ${{ github.event.inputs.version }}
           - 构建日期: ${{ steps.date.outputs.builddate }}
           - 构建平台: Windows & Linux & macOS
-          - Go版本: 1.23.x
+          - Go版本: 见仓库 go.mod
           
           ### 下载
           - Windows (AMD64): `ipinfoapi-windows-amd64.exe`

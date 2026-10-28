@@ -10,6 +10,7 @@ import (
 
 // AppConfig 应用程序配置结构体
 type AppConfig struct {
+	XDBPoolSize int `yaml:"xdb_pool_size"`
 	// IP地理位置数据库配置（支持多个）
 	IpLocateDbs []string `yaml:"ip_locate_dbs"`
 }

@@ -1,24 +1,22 @@
 package ip2region
 
 import (
+	"github.com/winezer0/ipinfo/internal/testassets"
 	"github.com/winezer0/ipinfo/pkg/iplocate"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 )
 
-func getTestDBPath(dbname string) string {
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..", "..")
-	return filepath.Join(projectRoot, "assets", dbname)
+func getTestDBPath(t testing.TB, dbname string) string {
+	t.Helper()
+	return testassets.Path(t, dbname)
 }
 
 // TestIP2RegionIPv4 测试IPv4数据库查询
 func TestIP2RegionIPv4(t *testing.T) {
 	// xdb IPv4文件路径
-	dbPath := getTestDBPath("ip2region_v4.xdb")
+	dbPath := getTestDBPath(t, "ip2region_v4.xdb")
 
 	// 创建IP2Region实例
 	ip2Region, err := NewIP2Region(iplocate.IPv4VersionNo, dbPath)
@@ -59,7 +57,7 @@ func TestIP2RegionIPv4(t *testing.T) {
 // TestIP2RegionIPv6 测试IPv6数据库查询
 func TestIP2RegionIPv6(t *testing.T) {
 	// xdb IPv6文件路径
-	dbPath := getTestDBPath("ip2region_v6.xdb")
+	dbPath := getTestDBPath(t, "ip2region_v6.xdb")
 
 	// 创建IP2Region实例
 	ip2Region, err := NewIP2Region(iplocate.IPv6VersionNo, dbPath)
@@ -100,7 +98,7 @@ func TestIP2RegionIPv6(t *testing.T) {
 // TestIP2RegionWithVectorIndex 测试使用 VectorIndex 缓存的查询
 func TestIP2RegionWithVectorIndex(t *testing.T) {
 	// xdb IPv4文件路径
-	dbPath := getTestDBPath("ip2region_v4.xdb")
+	dbPath := getTestDBPath(t, "ip2region_v4.xdb")
 
 	// 预加载VectorIndex
 	vectorIndex, err := LoadVectorIndexFromFile(dbPath)
@@ -128,7 +126,7 @@ func TestIP2RegionWithVectorIndex(t *testing.T) {
 // TestIP2RegionVerify 测试xdb文件验证功能
 func TestIP2RegionVerify(t *testing.T) {
 	// 验证IPv4 xdb文件
-	dbPath := getTestDBPath("ip2region_v4.xdb")
+	dbPath := getTestDBPath(t, "ip2region_v4.xdb")
 	err := xdb.VerifyFromFile(dbPath)
 	if err != nil {
 		t.Errorf("验证IPv4 xdb文件失败: %v", err)
@@ -137,7 +135,7 @@ func TestIP2RegionVerify(t *testing.T) {
 	}
 
 	// 验证IPv6 xdb文件
-	dbPath = getTestDBPath("ip2region_v6.xdb")
+	dbPath = getTestDBPath(t, "ip2region_v6.xdb")
 	err = xdb.VerifyFromFile(dbPath)
 	if err != nil {
 		t.Errorf("验证IPv6 xdb文件失败: %v", err)
@@ -148,11 +146,11 @@ func TestIP2RegionVerify(t *testing.T) {
 
 // TestIP2RegionFindAndFindFull 测试Find和FindFull方法对比
 func TestIP2RegionFindAndFindFull(t *testing.T) {
-	dbPath := getTestDBPath("ip2region_v4.xdb")
+	dbPath := getTestDBPath(t, "ip2region_v4.xdb")
 
 	ip2Region, err := NewIP2Region(iplocate.IPv4VersionNo, dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer ip2Region.Close()
 
@@ -174,11 +172,11 @@ func TestIP2RegionFindAndFindFull(t *testing.T) {
 
 // TestIP2RegionIPv6FindAndFindFull 测试IPv6的FindFull方法
 func TestIP2RegionIPv6FindAndFindFull(t *testing.T) {
-	dbPath := getTestDBPath("ip2region_v6.xdb")
+	dbPath := getTestDBPath(t, "ip2region_v6.xdb")
 
 	ip2Region, err := NewIP2Region(iplocate.IPv6VersionNo, dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer ip2Region.Close()
 

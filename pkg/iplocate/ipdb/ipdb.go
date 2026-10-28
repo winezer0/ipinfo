@@ -68,38 +68,7 @@ func (db *IPDB) IsInitialized() bool {
 func (db *IPDB) FindFull(query string) *iplocate.IPLocate {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
-
-	result := &iplocate.IPLocate{
-		IP: query,
-	}
-
-	ip := net.ParseIP(query)
-	if ip == nil {
-		return result
-	}
-
-	if ip.To4() != nil {
-		result.Version = 4
-	} else {
-		result.Version = 6
-	}
-
-	info, err := db.city.FindInfo(query, "CN")
-	if err != nil {
-		return result
-	}
-
-	if info == nil {
-		return result
-	}
-
-	result.Country = info.CountryName
-	result.Province = info.RegionName
-	result.City = info.CityName
-	result.ISP = info.IspDomain
-	result.Location = formatCityInfo(info)
-
-	return result
+	return db.findFullInternal(query)
 }
 
 // BatchFindFull 批量查询多个IP地址,返回更结构化的地址信息
@@ -133,6 +102,9 @@ func (db *IPDB) findFullInternal(query string) *iplocate.IPLocate {
 		result.Version = 6
 	}
 
+	if db.city == nil {
+		return result
+	}
 	info, err := db.city.FindInfo(query, "CN")
 	if err != nil {
 		return result
@@ -143,9 +115,10 @@ func (db *IPDB) findFullInternal(query string) *iplocate.IPLocate {
 	}
 
 	result.Country = info.CountryName
-	result.City = info.RegionName
-	result.Area = info.CityName
+	result.Province = info.RegionName
+	result.City = info.CityName
 	result.ISP = info.IspDomain
+	result.Location = formatCityInfo(info)
 
 	return result
 }

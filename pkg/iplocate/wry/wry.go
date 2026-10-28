@@ -20,9 +20,10 @@ type IPDB[T ~uint32 | ~uint64] struct {
 }
 
 type Reader struct {
-	s []byte
-	i uint32 // current reading index
-	l uint32 // last reading index
+	s   []byte
+	i   uint32 // current reading index
+	l   uint32 // last reading index
+	err error
 
 	Result Result
 }
@@ -39,6 +40,7 @@ func (r *Reader) seekAbs(offset uint32) {
 	r.l = r.i
 	if offset >= uint32(len(r.s)) {
 		r.i = uint32(len(r.s))
+		r.err = fmt.Errorf("记录偏移越界: %d", offset)
 		return
 	}
 	r.i = offset
@@ -64,38 +66,53 @@ func (r *Reader) seekBack() {
 
 // read 读取指定长度的数据，带边界检查
 func (r *Reader) read(length uint32) []byte {
-	// 边界检查：防止数组越界
-	if r.i+length > uint32(len(r.s)) {
-		length = uint32(len(r.s)) - r.i
+	if r.err != nil {
+		return nil
 	}
-
-	rs := make([]byte, length)
-	copy(rs, r.s[r.i:])
+	if uint64(r.i)+uint64(length) > uint64(len(r.s)) {
+		r.err = fmt.Errorf("记录截断")
+		return nil
+	}
+	rs := r.s[r.i : r.i+length]
 	r.l = r.i
 	r.i += length
 	return rs
 }
 
 func (r *Reader) readMode() (mode byte) {
-	mode = r.s[r.i]
-	r.l = r.i
-	r.i += 1
-	return
+	data := r.read(1)
+	if len(data) == 0 {
+		return 0
+	}
+	return data[0]
 }
 
 // readOffset: read 3 bytes as uint32 offset
 func (r *Reader) readOffset(follow bool) uint32 {
 	buf := r.read(3)
+	if r.err != nil {
+		return 0
+	}
 	offset := Bytes3ToUint32(buf)
 	if follow {
-		r.l = r.i
-		r.i = offset
+		r.seekAbs(offset)
 	}
 	return offset
 }
 
 func (r *Reader) readString(seek bool) string {
+	if r.err != nil {
+		return ""
+	}
+	if uint64(r.i) >= uint64(len(r.s)) {
+		r.err = fmt.Errorf("字符串偏移越界")
+		return ""
+	}
 	length := bytes.IndexByte(r.s[r.i:], 0)
+	if length < 0 {
+		r.err = fmt.Errorf("字符串缺少终止符")
+		return ""
+	}
 	str := string(r.s[r.i : r.i+uint32(length)])
 	if seek {
 		r.l = r.i
@@ -128,6 +145,9 @@ func (r Result) String() string {
 }
 
 func Bytes3ToUint32(data []byte) uint32 {
+	if len(data) < 3 {
+		return 0
+	}
 	i := uint32(data[0]) & 0xff
 	i |= (uint32(data[1]) << 8) & 0xff00
 	i |= (uint32(data[2]) << 16) & 0xff0000

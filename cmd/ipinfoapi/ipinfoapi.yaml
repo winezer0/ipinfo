@@ -1,4 +1,6 @@
 # ==================== 认证配置 ====================
+xdb_pool_size: 1 # 每个 XDB 的独立 Searcher 数量，1–64；仅影响 XDB
+
 auth:
   token: "test-token-123456"
   enable: true
@@ -13,12 +15,15 @@ http:
   read_timeout: 10    # 读取超时（秒）
   write_timeout: 10   # 写入超时（秒）
   idle_timeout: 30    # 空闲连接超时（秒）
+  max_batch_size: 100 # 批量查询 IP 数量上限
+  trusted_proxies: [] # 可信代理 CIDR；默认不信任转发头
 
 # ==================== 日志配置 ====================
+# 使用 slogs；level 同时控制控制台和文件，文件输出 JSON，保留 30 天并压缩备份
 log:
   level: "info"           # 日志级别: debug/info/warn/error
-  file: "ipinfoapi.log"  # 日志文件路径
-  console: "TLCM"         # 控制台输出格式: T=时间 L=级别 C=调用者 M=消息, off=关闭
+  file: "ipinfoapi.log"  # 日志文件路径；空字符串关闭文件日志
+  console: "TLCM"         # 支持 text/json/off 或掩码: T=时间 L=级别 C=调用者 M=消息
   max_size: 100           # 单个日志文件最大大小（MB）
   max_backups: 3          # 保留旧日志文件的最大个数
 # ==================== 可选数据库说明 ====================
@@ -42,13 +47,15 @@ log:
 #   - assets/dbip-city-ipv6.mmdb       (DBIP City IPv6库)
 
 # 数据库下载地址和对应的存储路径信息
+# enable 仅控制下载；查询仍使用 filename + storage-dir 指定的本地文件
+# storage-dir 省略时使用进程工作目录；可添加 checksum、check-size、max-size
 databases:
   - module: ipvx_locate_db
     filename: qqwry.ipdb
     download-urls:
       - https://cdn.jsdelivr.net/npm/qqwry.ipdb/qqwry.ipdb
       - https://unpkg.com/qqwry.ipdb/qqwry.ipdb
-    keep-updated: false
+    keep-updated: "false"
     enable: true
 
   - module: ipv4_locate_db
@@ -56,7 +63,7 @@ databases:
     download-urls:
       - https://github.com/metowolf/qqwry.dat/releases/latest/download/qqwry.dat
       - https://github.com/winezer0/cdninfo/blob/main/assets/qqwry.dat
-    keep-updated: false
+    keep-updated: "false"
     enable: true
 
   - module: ipv6_locate_db
@@ -64,7 +71,7 @@ databases:
     download-urls:
       - https://github.com/winezer0/cdninfo/blob/main/assets/zxipv6wry.db
       - https://cdn.jsdelivr.net/gh/winezer0/cdninfo/assets/zxipv6wry.db
-    keep-updated: false
+    keep-updated: "false"
     enable: true
 
 

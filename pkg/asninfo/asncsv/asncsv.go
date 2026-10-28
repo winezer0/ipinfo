@@ -2,6 +2,7 @@
 package asncsv
 
 import (
+	"bytes"
 	"encoding/csv"
 	"fmt"
 	"github.com/winezer0/ipinfo/pkg/iputils"
@@ -220,10 +221,22 @@ func (c *ASNCsvQuerier) BatchFindASN(ips []string) map[string]*asninfo.ASNInfo {
 
 // ASNToIPRanges 通过ASN号反查所有IP段
 func (c *ASNCsvQuerier) ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
-	// 懒加载ASN索引
-	c.ensureASNIndexLoaded()
-
-	c.mu.RLock()
+	for {
+		c.mu.RLock()
+		if !c.loaded {
+			c.mu.RUnlock()
+			return nil, asninfo.ErrDatabaseNotInitialized
+		}
+		if c.asnIndexLoaded {
+			break
+		}
+		c.mu.RUnlock()
+		c.mu.Lock()
+		if c.loaded {
+			c.ensureASNIndexLoaded()
+		}
+		c.mu.Unlock()
+	}
 	defer c.mu.RUnlock()
 
 	var findIPs []*net.IPNet
@@ -232,14 +245,7 @@ func (c *ASNCsvQuerier) ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
 	if exists {
 		for _, idx := range indices {
 			record := c.records[idx]
-			mask := getIPv4MaskString(record.StartIP, record.EndIP)
-			if mask == "" {
-				continue
-			}
-			_, ipNet, err := net.ParseCIDR(fmt.Sprintf("%s/%s", record.StartIP.String(), mask))
-			if err == nil {
-				findIPs = append(findIPs, ipNet)
-			}
+			findIPs = append(findIPs, rangeToCIDRs(record.StartIP, record.EndIP)...)
 		}
 	}
 
@@ -247,32 +253,15 @@ func (c *ASNCsvQuerier) ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
 	if exists6 {
 		for _, idx := range indices6 {
 			record := c.records6[idx]
-			mask := getIPv6MaskString(record.StartIP, record.EndIP)
-			if mask == "" {
-				continue
-			}
-			_, ipNet, err := net.ParseCIDR(fmt.Sprintf("%s/%s", record.StartIP.String(), mask))
-			if err == nil {
-				findIPs = append(findIPs, ipNet)
-			}
+			findIPs = append(findIPs, rangeToCIDRs(record.StartIP, record.EndIP)...)
 		}
 	}
 
 	return findIPs, nil
 }
 
-// ensureASNIndexLoaded 懒加载ASN索引
+// ensureASNIndexLoaded 懒加载ASN索引；调用方必须持有写锁。
 func (c *ASNCsvQuerier) ensureASNIndexLoaded() {
-	c.mu.RLock()
-	if c.asnIndexLoaded {
-		c.mu.RUnlock()
-		return
-	}
-	c.mu.RUnlock()
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if c.asnIndexLoaded {
 		return
 	}
@@ -327,7 +316,7 @@ func parseCSVRecord(record []string) *ASNRecord {
 	startIP := net.ParseIP(startIPStr)
 	endIP := net.ParseIP(endIPStr)
 
-	if startIP == nil || endIP == nil {
+	if startIP == nil || endIP == nil || (startIP.To4() == nil) != (endIP.To4() == nil) || compareIP(startIP, endIP) > 0 {
 		return nil
 	}
 
@@ -340,6 +329,32 @@ func parseCSVRecord(record []string) *ASNRecord {
 		AutonomousSystemOrg:    org,
 		IsIPv6:                 isIPv6,
 	}
+}
+
+// rangeToCIDRs 将闭区间精确拆分为对齐的CIDR，不遗漏也不扩展地址。
+func rangeToCIDRs(startIP, endIP net.IP) []*net.IPNet {
+	bits := 128
+	if startIP.To4() != nil {
+		bits = 32
+	}
+	start, end := ipToBigInt(startIP), ipToBigInt(endIP)
+	var result []*net.IPNet
+	for start.Cmp(end) <= 0 {
+		hostBits := bits
+		if start.Sign() != 0 {
+			hostBits = int(start.TrailingZeroBits())
+		}
+		remaining := new(big.Int).Sub(end, start)
+		remaining.Add(remaining, big.NewInt(1))
+		if maxBits := remaining.BitLen() - 1; hostBits > maxBits {
+			hostBits = maxBits
+		}
+		ip := make(net.IP, bits/8)
+		start.FillBytes(ip)
+		result = append(result, &net.IPNet{IP: ip, Mask: net.CIDRMask(bits-hostBits, bits)})
+		start.Add(start, new(big.Int).Lsh(big.NewInt(1), uint(hostBits)))
+	}
+	return result
 }
 
 // ipToBigInt 将IP地址转换为大整数
@@ -394,7 +409,23 @@ func getIPv6MaskString(startIP, endIP net.IP) string {
 
 // compareIP 比较两个IP地址
 func compareIP(ip1, ip2 net.IP) int {
-	ip1Big := ipToBigInt(ip1)
-	ip2Big := ipToBigInt(ip2)
-	return ip1Big.Cmp(ip2Big)
+	// 同一地址族直接比较网络字节序，避免分配big.Int。
+	a, b := ip1.To16(), ip2.To16()
+	if v4 := ip1.To4(); v4 != nil {
+		a = v4
+	}
+	if v4 := ip2.To4(); v4 != nil {
+		b = v4
+	}
+	if len(a) != len(b) {
+		// 保持原有跨地址族的数值比较语义。
+		a, b = bytes.TrimLeft(a, "\x00"), bytes.TrimLeft(b, "\x00")
+		if len(a) < len(b) {
+			return -1
+		}
+		if len(a) > len(b) {
+			return 1
+		}
+	}
+	return bytes.Compare(a, b)
 }

@@ -1,0 +1,27 @@
+生产性能测量与汇总
+
+准备：python scripts/fetch_test_assets.py
+XDB 微基准（各地址族串行运行三次，修改输出文件名）：
+go run ./cmd/ipbench -xdb assets/ip2region_v4.xdb -requests 10000 -out benchmarks/production-v4-run1.json
+IPv6 改用 assets/ip2region_v6.xdb；默认 pool=1,4，workers=1,4,16，batch=1,16。
+现使用生产池：共享 VectorIndex，各 Searcher 独立文件句柄。pool=1 使用互斥锁，pool>1 有界借还。
+
+完整 API 基准：
+go run ./cmd/apibench -requests 2000 -repeat 3 -workers 1,4,16 -pool 1,4 -out benchmarks/api-production.json
+覆盖 /ip、/asn、/all、/full；full 每次 8 个不同 IPv4/IPv6。
+独立服务子进程仅监听回环地址；包含鉴权、路由、中间件、HTTP/1.1 keep-alive 和结果语义校验。
+CPU 为服务进程用户态加内核态时间，单核为 100%，不含客户端。RSS 每 20ms 采样并记录场景最大值，另记录生命周期峰值；短时峰值可能遗漏。
+错误日志级别，无正常请求磁盘日志。资源采样接口仅存在于压测子进程，使用专用鉴权。
+Windows 使用 QueryPerformanceCounter；其他平台使用 Go 单调时钟。CPU/RSS 支持 Windows/Linux。
+闭环负载、预热缓存、固定样本，不含公网、TLS、生产磁盘日志或冷启动；P95 包含客户端响应校验。
+串行执行，避免与测试、下载及其他压测竞争。
+
+汇总：
+python scripts/summarize_benchmarks.py benchmarks/api-production.json --out benchmarks/api-summary.json --text benchmarks/api-summary.txt
+输出中位数、最小/最大值及 pool 对比。XDB 可传多个文件或引号包裹的 glob，每场景默认至少三次样本。
+前后对比增加 --baseline benchmarks/previous-api-summary.json。
+校验环境、数据库标识/哈希、请求数、样本完整性；失败请求使退出码非零。无固定性能门槛。
+
+README.txt 为上一阶段候选池测量方法。历史 ipv4-run*.json、ipv6-run*.json、xdb-summary.* 使用原型，不能作为生产代码改动前后的提升证据。
+api-smoke.json 仅功能冒烟。api-production.json 为当前生产 API 基线。
+默认 xdb_pool_size=1，结合目标硬件和业务压测决定是否改为 4；单线程或 ASN 查询未必受益。

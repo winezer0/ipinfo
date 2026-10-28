@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit and build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Unit tests (offline databases)
+        run: go test ./... -count=1
+      - name: Vet
+        run: go vet ./...
+      - name: Build every command
+        run: go build ./cmd/...
+      - name: Python tooling tests
+        run: python -m unittest discover -s scripts -p "test_*.py"
+      - name: Race tests
+        if: runner.os == 'Linux'
+        run: go test -race ./... -count=1
+      - name: Parser fuzz smoke
+        if: runner.os == 'Linux'
+        run: go test ./pkg/iplocate/wry -run '^$' -fuzz '^FuzzReaderParse$' -fuzztime=5s -parallel=2

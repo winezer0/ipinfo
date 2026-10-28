@@ -1,6 +1,9 @@
 package iplocate
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 // IP版本常量
 const (
@@ -51,4 +54,17 @@ type IPLocate struct {
 	Area     string `json:"area"`     //区县
 	Street   string `json:"street"`   //街道
 	ISP      string `json:"isp"`      //网络服务提供者
+}
+
+// HasData 判断是否包含实际定位信息，不把只有IP和版本的空结果视为命中。
+func (r *IPLocate) HasData() bool {
+	if r == nil {
+		return false
+	}
+	for _, value := range []string{r.Location, r.Country, r.Province, r.City, r.Area, r.Street, r.ISP} {
+		if strings.Trim(value, " |0\t\r\n") != "" {
+			return true
+		}
+	}
+	return false
 }

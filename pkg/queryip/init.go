@@ -20,6 +20,9 @@ import (
 
 // InitDBEngines 初始化所有数据库引擎
 func InitDBEngines(config *IPDbConfig) (*DBEngine, error) {
+	if config.XDBPoolSize < 0 || config.XDBPoolSize > ip2region.MaxPoolSize {
+		return nil, fmt.Errorf("invalid xdb_pool_size: %d", config.XDBPoolSize)
+	}
 	asnIPv4Manager, asnIPv6Manager, err := initASNManagers(config)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInitASNFailed, err)
@@ -142,7 +145,7 @@ func initIPEngines(config *IPDbConfig) (iplocate.IPInfo, iplocate.IPInfo, error)
 		return nil, nil, ErrMissingIPv4Config
 	}
 
-	ipv4Engine, err := createIPEngine(ipv4DbPath, iplocate.IPv4VersionNo)
+	ipv4Engine, err := createIPEngine(ipv4DbPath, iplocate.IPv4VersionNo, config.XDBPoolSize)
 	if err != nil {
 		return nil, nil, fmt.Errorf("初始化IPv4数据库失败: %w", err)
 	}
@@ -153,6 +156,7 @@ func initIPEngines(config *IPDbConfig) (iplocate.IPInfo, iplocate.IPInfo, error)
 	}
 
 	if ipv6DbPath == "" {
+		ipv4Engine.Close()
 		return nil, nil, ErrMissingIPv6Config
 	}
 
@@ -160,7 +164,7 @@ func initIPEngines(config *IPDbConfig) (iplocate.IPInfo, iplocate.IPInfo, error)
 	if ipv6DbPath == ipv4DbPath {
 		ipv6Engine = ipv4Engine
 	} else {
-		ipv6Engine, err = createIPEngine(ipv6DbPath, iplocate.IPv6VersionNo)
+		ipv6Engine, err = createIPEngine(ipv6DbPath, iplocate.IPv6VersionNo, config.XDBPoolSize)
 		if err != nil {
 			ipv4Engine.Close()
 			return nil, nil, fmt.Errorf("初始化IPv6数据库失败: %w", err)
@@ -171,12 +175,12 @@ func initIPEngines(config *IPDbConfig) (iplocate.IPInfo, iplocate.IPInfo, error)
 }
 
 // createIPEngine 根据文件后缀创建对应的IP数据库引擎
-func createIPEngine(dbPath string, version int) (iplocate.IPInfo, error) {
+func createIPEngine(dbPath string, version int, pools ...int) (iplocate.IPInfo, error) {
 	ext := strings.ToLower(filepath.Ext(dbPath))
 
 	switch ext {
 	case ".xdb":
-		return createIP2RegionEngine(dbPath)
+		return createIP2RegionEngine(dbPath, version, pools...)
 
 	case ".mmdb":
 		return createMMDBEngine(dbPath, version)
@@ -193,8 +197,12 @@ func createIPEngine(dbPath string, version int) (iplocate.IPInfo, error) {
 }
 
 // createIP2RegionEngine 创建IP2Region引擎
-func createIP2RegionEngine(dbPath string) (iplocate.IPInfo, error) {
-	engine, err := ip2region.NewIP2Region(iplocate.IPv4VersionNo, dbPath)
+func createIP2RegionEngine(dbPath string, version int, pools ...int) (iplocate.IPInfo, error) {
+	size := 1
+	if len(pools) > 0 && pools[0] != 0 {
+		size = pools[0]
+	}
+	engine, err := ip2region.NewIP2RegionWithPool(version, dbPath, size)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInitIP2RegionFailed, err)
 	}

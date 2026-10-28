@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/winezer0/downutils/downutils"
+	"github.com/winezer0/downutils"
 	"github.com/winezer0/ipinfo/cmd/ipinfoapi/webapi"
 	"github.com/winezer0/ipinfo/pkg/queryip"
-	"github.com/winezer0/xutils/logging"
+	"github.com/winezer0/slogs"
 )
 
 const (
@@ -72,7 +72,8 @@ func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
 			configPath = AppName + ".yaml"
 		}
 		if err := config.GenDefaultConfig(configPath); err != nil {
-			fmt.Printf("Failed to generate config file: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Failed to generate config file: %v\n", err)
+			os.Exit(1)
 		}
 		fmt.Printf("Default config file has been generated: %s\n", configPath)
 		os.Exit(0)
@@ -91,9 +92,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	logCfg := logging.LogConfig{
-		Level:         cfg.Log.Level,
-		LogFile:       cfg.Log.File,
+	logCfg := slogs.LogConfig{
+		ConsoleLevel:  cfg.Log.Level,
+		FileLevel:     cfg.Log.Level,
+		LogFilePath:   cfg.Log.File,
 		ConsoleFormat: cfg.Log.Console,
 		MaxSize:       cfg.Log.MaxSize,    // 单个文件最大100MB
 		MaxBackups:    cfg.Log.MaxBackups, // 最多保留10个备份
@@ -101,44 +103,50 @@ func main() {
 		Compress:      true,               // 压缩备份文件
 	}
 
-	if err := logging.InitDefaultLogger(logCfg); err != nil {
+	if err := slogs.Init(logCfg); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to init default logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer logging.Sync()
+	defer slogs.Default().Close()
 
-	logging.Infof("Starting application name: %s %s %s", AppName, AppVersion, BuildDate)
+	slogs.Infof("Starting application name: %s %s %s", AppName, AppVersion, BuildDate)
 
 	if err := downloadDatabases(cfg); err != nil {
-		logging.Warnf("Database download failed, continuing with existing databases error: %v", err)
+		slogs.Warnf("Database download failed, continuing with existing databases error: %v", err)
 	}
 
 	if !cfg.HTTP.Enable {
-		logging.Error("HTTP service is disabled")
+		slogs.Error("HTTP service is disabled")
 		os.Exit(1)
 	}
 
 	engine, err := initDBEngine(cfg)
 	if err != nil {
-		logging.Errorf("Failed to initialize database engineerror :%v", err)
+		slogs.Errorf("Failed to initialize database engineerror :%v", err)
 		os.Exit(1)
 	}
 	defer engine.Close()
 
-	httpHandler := webapi.RegisterRoutes(engine, cfg.Auth.Token, cfg.Auth.Enable)
+	httpHandler := webapi.RegisterRoutes(engine, cfg.Auth.Token, cfg.Auth.Enable, webapi.RouterOptions{
+		MaxBatchSize: cfg.HTTP.MaxBatchSize, TrustedProxies: cfg.HTTP.TrustedProxies,
+	})
 
 	srv := createHTTPServer(cfg, httpHandler)
 
 	go func() {
-		logging.Infof("Server starting srv.Addr:%v EnableHttps(%v)", srv.Addr, cfg.HTTP.HTTPS)
+		slogs.Infof("Server starting srv.Addr:%v EnableHttps(%v)", srv.Addr, cfg.HTTP.HTTPS)
 
 		if cfg.HTTP.HTTPS {
 			if err := srv.ListenAndServeTLS(cfg.HTTP.CertFile, cfg.HTTP.KeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				logging.Fatalf("HTTPS server failed:%v", err)
+				slogs.Errorf("HTTPS server failed:%v", err)
+				slogs.Default().Close()
+				os.Exit(1)
 			}
 		} else {
 			if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				logging.Fatalf("HTTP server failed:%v", err)
+				slogs.Errorf("HTTP server failed:%v", err)
+				slogs.Default().Close()
+				os.Exit(1)
 			}
 		}
 	}()
@@ -186,6 +194,7 @@ func downloadDatabases(config *config.ServerConfig) error {
 // initDBEngine 初始化数据库引擎
 func initDBEngine(config *config.ServerConfig) (*queryip.DBEngine, error) {
 	dbConfig := &queryip.IPDbConfig{
+		XDBPoolSize:  config.XDBPoolSize,
 		AsnIpvxDb:    downutils.GetModuleFinalPath("asn_ipvx_db", config.Databases, ""),
 		AsnIpv4Db:    downutils.GetModuleFinalPath("asn_ipv4_db", config.Databases, ""),
 		AsnIpv6Db:    downutils.GetModuleFinalPath("asn_ipv6_db", config.Databases, ""),
@@ -199,7 +208,7 @@ func initDBEngine(config *config.ServerConfig) (*queryip.DBEngine, error) {
 		return nil, err
 	}
 
-	logging.Info("Database engines initialized")
+	slogs.Info("Database engines initialized")
 	return engine, nil
 }
 
@@ -222,14 +231,14 @@ func waitForShutdown(srv *http.Server) {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	sig := <-quit
-	logging.Infof("Shutting down server signal: %v", sig.String())
+	slogs.Infof("Shutting down server signal: %v", sig.String())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logging.Errorf("Server forced to shutdown error: %v", err)
+		slogs.Errorf("Server forced to shutdown error: %v", err)
 	}
 
-	logging.Info("Server stopped gracefully")
+	slogs.Info("Server stopped gracefully")
 }

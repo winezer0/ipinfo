@@ -20,7 +20,14 @@ func (h *APIHandler) HandleAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := h.engine.QueryIP(validIP)
+	result, err := h.engine.QueryIPContext(r.Context(), validIP)
+	if r.Context().Err() != nil {
+		return
+	}
+	if err != nil {
+		WriteError(w, http.StatusServiceUnavailable, CodeQueryFailed, "查询数据库失败")
+		return
+	}
 
 	data := AllData{
 		IP:       validIP,

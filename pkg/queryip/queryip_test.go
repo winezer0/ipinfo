@@ -1,22 +1,20 @@
 package queryip
 
 import (
+	"github.com/winezer0/ipinfo/internal/testassets"
 	"github.com/winezer0/ipinfo/pkg/utils"
-	"path/filepath"
-	"runtime"
 	"testing"
 )
 
-func getTestDBPath(dbname string) string {
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..")
-	return filepath.Join(projectRoot, "assets", dbname)
+func getTestDBPath(t testing.TB, dbname string) string {
+	t.Helper()
+	return testassets.Path(t, dbname)
 }
 
 func TestQueryIP(t *testing.T) {
-	asnIpvxDb := getTestDBPath("geolite2-asn.mmdb")
-	ipv4LocateDb := getTestDBPath("qqwry.dat")
-	ipv6LocateDb := getTestDBPath("zxipv6wry.db")
+	asnIpvxDb := getTestDBPath(t, "geolite2-asn.mmdb")
+	ipv4LocateDb := getTestDBPath(t, "qqwry.dat")
+	ipv6LocateDb := getTestDBPath(t, "zxipv6wry.db")
 
 	config := &IPDbConfig{
 		AsnIpvxDb:    asnIpvxDb,
@@ -26,7 +24,7 @@ func TestQueryIP(t *testing.T) {
 
 	engine, err := InitDBEngines(config)
 	if err != nil {
-		t.Skipf("跳过测试：无法初始化数据库引擎: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 		return
 	}
 	defer engine.Close()
@@ -84,7 +82,7 @@ func TestCreateASNManagerMMDB(t *testing.T) {
 
 	for _, dbFile := range dbFiles {
 		t.Run(dbFile, func(t *testing.T) {
-			dbPath := getTestDBPath(dbFile)
+			dbPath := getTestDBPath(t, dbFile)
 
 			manager, err := createASNManager(dbPath)
 			if err != nil {
@@ -128,7 +126,7 @@ func TestCreateASNManagerCSV(t *testing.T) {
 
 	for _, dbFile := range dbFiles {
 		t.Run(dbFile, func(t *testing.T) {
-			dbPath := getTestDBPath(dbFile)
+			dbPath := getTestDBPath(t, dbFile)
 
 			manager, err := createASNManager(dbPath)
 			if err != nil {
@@ -188,10 +186,10 @@ func TestCreateASNManagerUnsupportedFormat(t *testing.T) {
 
 func TestInitDBEnginesWithCSVASN(t *testing.T) {
 	config := &IPDbConfig{
-		AsnIpv4Db:    getTestDBPath("dbip-asn-ipv4.csv"),
-		AsnIpv6Db:    getTestDBPath("dbip-asn-ipv6.csv"),
-		Ipv4LocateDb: getTestDBPath("qqwry.dat"),
-		Ipv6LocateDb: getTestDBPath("zxipv6wry.db"),
+		AsnIpv4Db:    getTestDBPath(t, "dbip-asn-ipv4.csv"),
+		AsnIpv6Db:    getTestDBPath(t, "dbip-asn-ipv6.csv"),
+		Ipv4LocateDb: getTestDBPath(t, "qqwry.dat"),
+		Ipv6LocateDb: getTestDBPath(t, "zxipv6wry.db"),
 	}
 
 	engine, err := InitDBEngines(config)
@@ -229,9 +227,9 @@ func TestInitDBEnginesWithCSVASN(t *testing.T) {
 
 func TestInitDBEnginesWithMMDBASN(t *testing.T) {
 	config := &IPDbConfig{
-		AsnIpvxDb:    getTestDBPath("geolite2-asn.mmdb"),
-		Ipv4LocateDb: getTestDBPath("qqwry.dat"),
-		Ipv6LocateDb: getTestDBPath("zxipv6wry.db"),
+		AsnIpvxDb:    getTestDBPath(t, "geolite2-asn.mmdb"),
+		Ipv4LocateDb: getTestDBPath(t, "qqwry.dat"),
+		Ipv6LocateDb: getTestDBPath(t, "zxipv6wry.db"),
 	}
 
 	engine, err := InitDBEngines(config)
@@ -256,10 +254,10 @@ func TestInitDBEnginesWithMMDBASN(t *testing.T) {
 
 func TestInitDBEnginesWithMixedASN(t *testing.T) {
 	config := &IPDbConfig{
-		AsnIpv4Db:    getTestDBPath("dbip-asn-ipv4.csv"),
-		AsnIpv6Db:    getTestDBPath("geolite2-asn-ipv6.mmdb"),
-		Ipv4LocateDb: getTestDBPath("qqwry.dat"),
-		Ipv6LocateDb: getTestDBPath("zxipv6wry.db"),
+		AsnIpv4Db:    getTestDBPath(t, "dbip-asn-ipv4.csv"),
+		AsnIpv6Db:    getTestDBPath(t, "geolite2-asn-ipv6.mmdb"),
+		Ipv4LocateDb: getTestDBPath(t, "qqwry.dat"),
+		Ipv6LocateDb: getTestDBPath(t, "zxipv6wry.db"),
 	}
 
 	engine, err := InitDBEngines(config)

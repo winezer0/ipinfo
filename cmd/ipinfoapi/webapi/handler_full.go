@@ -1,6 +1,8 @@
 package webapi
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -8,6 +10,17 @@ import (
 // HandleFull 处理批量IP查询请求
 func (h *APIHandler) HandleFull(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
+	if r.Context().Err() != nil {
+		return
+	}
+	limit := h.maxBatchSize
+	if limit <= 0 {
+		limit = 100
+	}
+	if q != "" && strings.Count(q, ",")+1 > limit {
+		WriteError(w, http.StatusBadRequest, CodeInvalidParam, fmt.Sprintf("批量查询最多允许%d个IP", limit))
+		return
+	}
 
 	var ips []string
 	var clientIPs *ClientIPInfo
@@ -43,12 +56,19 @@ func (h *APIHandler) HandleFull(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, CodeInvalidParam, "未提供有效的IP地址")
 		return
 	}
+	if len(ips) > limit {
+		WriteError(w, http.StatusBadRequest, CodeInvalidParam, fmt.Sprintf("批量查询最多允许%d个IP", limit))
+		return
+	}
 
 	// 去重处理
 	ips = uniqueStrings(ips)
 
 	// 批量查询IP信息
-	results, successCount, failedCount := h.batchQueryIPs(ips)
+	results, successCount, failedCount, err := h.batchQueryIPs(r.Context(), ips)
+	if err != nil {
+		return
+	}
 
 	data := FullData{
 		Total:   len(ips),
@@ -66,12 +86,15 @@ func (h *APIHandler) HandleFull(w http.ResponseWriter, r *http.Request) {
 }
 
 // batchQueryIPs 批量查询IP信息
-func (h *APIHandler) batchQueryIPs(ips []string) ([]FullResultItem, int, int) {
+func (h *APIHandler) batchQueryIPs(ctx context.Context, ips []string) ([]FullResultItem, int, int, error) {
 	var results []FullResultItem
 	successCount := 0
 	failedCount := 0
 
 	for _, ip := range ips {
+		if err := ctx.Err(); err != nil {
+			return results, successCount, failedCount, err
+		}
 		item := FullResultItem{IP: ip}
 
 		validIP, ok := ValidateIP(ip)
@@ -82,12 +105,21 @@ func (h *APIHandler) batchQueryIPs(ips []string) ([]FullResultItem, int, int) {
 			continue
 		}
 
-		result := h.engine.QueryIP(validIP)
+		result, err := h.engine.QueryIPContext(ctx, validIP)
+		if ctx.Err() != nil {
+			return results, successCount, failedCount, ctx.Err()
+		}
+		if err != nil {
+			item.Error = "查询数据库失败"
+			failedCount++
+			results = append(results, item)
+			continue
+		}
 		item.IP = validIP
 		item.Location = ConvertIPLocate(result.IPLocate)
 		item.ASN = ConvertASN(result.ASNInfo)
 
-		if result.IPLocate != nil || result.ASNInfo != nil {
+		if result.IPLocate.HasData() || (result.ASNInfo != nil && result.ASNInfo.FoundASN) {
 			successCount++
 		} else {
 			failedCount++
@@ -97,7 +129,7 @@ func (h *APIHandler) batchQueryIPs(ips []string) ([]FullResultItem, int, int) {
 		results = append(results, item)
 	}
 
-	return results, successCount, failedCount
+	return results, successCount, failedCount, nil
 }
 
 // uniqueStrings 字符串切片去重

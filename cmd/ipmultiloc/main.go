@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/winezer0/ipinfo/pkg/queryip2"
+	"github.com/winezer0/ipinfo/pkg/multiloc"
 
 	"github.com/jessevdk/go-flags"
 )
 
 const (
-	AppName      = "iplocate2"
+	AppName      = "ipmultiloc"
 	AppVersion   = "1.0.0"
 	BuildDate    = "2026-04-25"
 	AppShortDesc = "IP Location Query Tool (Multi-Database Support)"
@@ -55,11 +55,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	dbConfig := &queryip2.IPDbConfig{
+	dbConfig := &multiloc.IPDbConfig{
+		XDBPoolSize: config.XDBPoolSize,
 		IpLocateDbs: config.IpLocateDbs,
 	}
 
-	engine, err := queryip2.InitDBEngines(dbConfig)
+	engine, err := multiloc.InitDBEngines(dbConfig)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "错误: 初始化数据库引擎失败: %v\n", err)
 		os.Exit(1)
@@ -98,7 +99,7 @@ func parseArgs() *CmdConfig {
 }
 
 // outputJSON 将查询结果以JSON格式输出到控制台
-func outputJSON(results *queryip2.IPDbInfo) {
+func outputJSON(results *multiloc.IPDbInfo) {
 	jsonData, err := json.MarshalIndent(results, "", "  ")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "错误: JSON序列化失败: %v\n", err)

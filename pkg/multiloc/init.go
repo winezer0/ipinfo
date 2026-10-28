@@ -1,4 +1,4 @@
-package queryip2
+package multiloc
 
 import (
 	"fmt"
@@ -18,6 +18,9 @@ import (
 
 // InitDBEngines 初始化所有数据库引擎（支持多数据库）
 func InitDBEngines(config *IPDbConfig) (*DBEngine, error) {
+	if config.XDBPoolSize < 0 || config.XDBPoolSize > ip2region.MaxPoolSize {
+		return nil, fmt.Errorf("invalid xdb_pool_size: %d", config.XDBPoolSize)
+	}
 	engines, err := initIPEngines(config)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInitIPFailed, err)
@@ -37,7 +40,7 @@ func initIPEngines(config *IPDbConfig) (engines map[string]iplocate.IPInfo, err 
 	engines = make(map[string]iplocate.IPInfo)
 
 	for _, dbPath := range config.IpLocateDbs {
-		engine, err := createIPEngine(dbPath)
+		engine, err := createIPEngine(dbPath, config.XDBPoolSize)
 		if err != nil {
 			closeIPEngines(engines)
 			return nil, fmt.Errorf("初始化数据库 %s 失败: %w", dbPath, err)
@@ -56,12 +59,12 @@ func initIPEngines(config *IPDbConfig) (engines map[string]iplocate.IPInfo, err 
 }
 
 // createIPEngine 根据文件后缀创建对应的IP数据库引擎
-func createIPEngine(dbPath string) (iplocate.IPInfo, error) {
+func createIPEngine(dbPath string, pools ...int) (iplocate.IPInfo, error) {
 	ext := strings.ToLower(filepath.Ext(dbPath))
 
 	switch ext {
 	case ".xdb":
-		return createIP2RegionEngine(dbPath)
+		return createIP2RegionEngine(dbPath, pools...)
 
 	case ".mmdb":
 		return createMMDBEngine(dbPath)
@@ -78,8 +81,12 @@ func createIPEngine(dbPath string) (iplocate.IPInfo, error) {
 }
 
 // createIP2RegionEngine 创建IP2Region引擎
-func createIP2RegionEngine(dbPath string) (iplocate.IPInfo, error) {
-	engine, err := ip2region.NewIP2Region(iplocate.IPv4VersionNo, dbPath)
+func createIP2RegionEngine(dbPath string, pools ...int) (iplocate.IPInfo, error) {
+	size := 1
+	if len(pools) > 0 && pools[0] != 0 {
+		size = pools[0]
+	}
+	engine, err := ip2region.NewIP2RegionAutoWithPool(dbPath, size)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInitIP2RegionFailed, err)
 	}

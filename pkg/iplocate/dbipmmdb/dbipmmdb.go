@@ -207,46 +207,7 @@ func (r *GeoRecord) getSubdivisionNames() []string {
 func (m *DBIPMMDB) FindFull(query string) *iplocate.IPLocate {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-
-	result := &iplocate.IPLocate{
-		IP: query,
-	}
-
-	ip := net.ParseIP(query)
-	if ip == nil {
-		return result
-	}
-
-	if ip.To4() != nil {
-		result.Version = 4
-	} else {
-		result.Version = 6
-	}
-
-	var record GeoRecord
-	err := m.db.Lookup(ip, &record)
-	if err != nil {
-		return result
-	}
-
-	result.Country = record.getCountryName()
-	result.Location = formatGeoRecord(record)
-
-	subNames := record.getSubdivisionNames()
-	if len(subNames) > 0 {
-		result.Province = subNames[0]
-	}
-
-	cityName := record.getCityName()
-	if cityName != "" {
-		result.City = cityName
-	}
-
-	if record.AutonomousSystemOrg != "" {
-		result.ISP = record.AutonomousSystemOrg
-	}
-
-	return result
+	return m.findFullInternal(query)
 }
 
 // BatchFindFull 批量查询多个IP地址,返回更结构化的地址信息
@@ -280,6 +241,9 @@ func (m *DBIPMMDB) findFullInternal(query string) *iplocate.IPLocate {
 		result.Version = 6
 	}
 
+	if m.db == nil {
+		return result
+	}
 	var record GeoRecord
 	err := m.db.Lookup(ip, &record)
 	if err != nil {
@@ -287,19 +251,16 @@ func (m *DBIPMMDB) findFullInternal(query string) *iplocate.IPLocate {
 	}
 
 	result.Country = record.getCountryName()
+	result.Location = formatGeoRecord(record)
 
 	subNames := record.getSubdivisionNames()
 	if len(subNames) > 0 {
-		result.City = subNames[0]
+		result.Province = subNames[0]
 	}
 
 	cityName := record.getCityName()
 	if cityName != "" {
-		if result.City != "" {
-			result.Area = cityName
-		} else {
-			result.City = cityName
-		}
+		result.City = cityName
 	}
 
 	if record.AutonomousSystemOrg != "" {

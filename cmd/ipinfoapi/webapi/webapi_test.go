@@ -2,6 +2,7 @@ package webapi
 
 import (
 	"encoding/json"
+	"github.com/winezer0/ipinfo/internal/testassets"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,8 +14,9 @@ import (
 )
 
 // getTestDBPath 获取测试数据库文件路径
-func getTestDBPath(dbname string) string {
-	return "../../../assets/" + dbname
+func getTestDBPath(t testing.TB, dbname string) string {
+	t.Helper()
+	return testassets.Path(t, dbname)
 }
 
 // initTestEngine 初始化测试用的数据库引擎
@@ -22,14 +24,14 @@ func initTestEngine(t *testing.T) *queryip.DBEngine {
 	t.Helper()
 
 	config := &queryip.IPDbConfig{
-		AsnIpvxDb:    getTestDBPath("geolite2-asn.mmdb"),
-		Ipv4LocateDb: getTestDBPath("qqwry.dat"),
-		Ipv6LocateDb: getTestDBPath("zxipv6wry.db"),
+		AsnIpvxDb:    getTestDBPath(t, "geolite2-asn.mmdb"),
+		Ipv4LocateDb: getTestDBPath(t, "qqwry.dat"),
+		Ipv6LocateDb: getTestDBPath(t, "zxipv6wry.db"),
 	}
 
 	engine, err := queryip.InitDBEngines(config)
 	if err != nil {
-		t.Skipf("跳过测试，数据库加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 
 	return engine
@@ -310,13 +312,13 @@ func TestGetClientIP(t *testing.T) {
 			name:    "X-Forwarded-For",
 			headers: map[string]string{"X-Forwarded-For": "1.2.3.4, 5.6.7.8"},
 			remote:  "127.0.0.1:12345",
-			wantIP:  "1.2.3.4",
+			wantIP:  "127.0.0.1",
 		},
 		{
 			name:    "X-Real-IP",
 			headers: map[string]string{"X-Real-IP": "2.3.4.5"},
 			remote:  "127.0.0.1:12345",
-			wantIP:  "2.3.4.5",
+			wantIP:  "127.0.0.1",
 		},
 		{
 			name:    "RemoteAddr",

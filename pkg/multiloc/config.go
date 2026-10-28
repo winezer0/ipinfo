@@ -1,4 +1,4 @@
-package queryip2
+package multiloc
 
 import (
 	"github.com/winezer0/ipinfo/pkg/iplocate"
@@ -6,6 +6,7 @@ import (
 
 // IPDbConfig 存储程序配置（支持多数据库）
 type IPDbConfig struct {
+	XDBPoolSize int // 0 defaults to one Searcher per XDB.
 	// IP地理位置数据库配置（支持多个）
 	IpLocateDbs []string
 }

@@ -7,6 +7,7 @@ import (
 
 // IPDbConfig 存储程序配置
 type IPDbConfig struct {
+	XDBPoolSize  int // 0 means the compatible default of one Searcher per XDB.
 	AsnIpvxDb    string
 	AsnIpv4Db    string
 	AsnIpv6Db    string

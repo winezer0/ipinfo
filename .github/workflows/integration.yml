@@ -1,0 +1,44 @@
+name: Database integration
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 2 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Cache pinned databases
+        uses: actions/cache@v5
+        with:
+          path: assets
+          key: database-fixtures-${{ hashFiles('scripts/test-assets.json') }}
+      - name: Verify or fetch pinned databases
+        run: python scripts/fetch_test_assets.py
+      - name: Integration tests
+        env:
+          IPINFO_INTEGRATION: '1'
+        run: go test ./... -count=1
+      - name: Concurrent database regression
+        env:
+          IPINFO_INTEGRATION: '1'
+        run: go test -race ./pkg/iplocate/ip2region ./pkg/asninfo/asnmmdb ./internal/integration -count=1

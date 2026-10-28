@@ -2,25 +2,23 @@
 package geolite2mmdb
 
 import (
+	"github.com/winezer0/ipinfo/internal/testassets"
 	"github.com/winezer0/ipinfo/pkg/iplocate"
-	"path/filepath"
-	"runtime"
 	"testing"
 )
 
-func getTestDBPath(dbname string) string {
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..", "..")
-	return filepath.Join(projectRoot, "assets", dbname)
+func getTestDBPath(t testing.TB, dbname string) string {
+	t.Helper()
+	return testassets.Path(t, dbname)
 }
 
 // TestGeoLite2MMDBIPv4 测试GeoLite2 IPv4数据库查询
 func TestGeoLite2MMDBIPv4(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-city-ipv4.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-city-ipv4.mmdb")
 
 	db, err := NewGeoLite2MMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -45,11 +43,11 @@ func TestGeoLite2MMDBIPv4(t *testing.T) {
 
 // TestGeoLite2MMDBIPv6 测试GeoLite2 IPv6数据库查询
 func TestGeoLite2MMDBIPv6(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-city-ipv6.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-city-ipv6.mmdb")
 
 	db, err := NewGeoLite2MMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -73,11 +71,11 @@ func TestGeoLite2MMDBIPv6(t *testing.T) {
 
 // TestGeoLite2MMDBDualStack 测试GeoLite2双栈数据库查询
 func TestGeoLite2MMDBDualStack(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-asn.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-asn.mmdb")
 
 	db, err := NewGeoLite2MMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -103,11 +101,11 @@ func TestGeoLite2MMDBDualStack(t *testing.T) {
 
 // TestGeoLite2MMDBBatchFindFull 测试批量查询
 func TestGeoLite2MMDBBatchFindFull(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-asn.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-asn.mmdb")
 
 	db, err := NewGeoLite2MMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -129,11 +127,11 @@ func TestGeoLite2MMDBBatchFindFull(t *testing.T) {
 
 // TestGeoLite2MMDBInvalidIP 测试无效IP查询
 func TestGeoLite2MMDBInvalidIP(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-asn.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-asn.mmdb")
 
 	db, err := NewGeoLite2MMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -169,11 +167,11 @@ func TestGeoLite2MMDBNonExistentFile(t *testing.T) {
 
 // TestGeoLite2MMDBDatabaseType 测试数据库类型常量
 func TestGeoLite2MMDBDatabaseType(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-asn.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-asn.mmdb")
 
 	db, err := NewGeoLite2MMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -185,11 +183,11 @@ func TestGeoLite2MMDBDatabaseType(t *testing.T) {
 
 // TestGeoLite2MMDBFindAndFindFull 测试Find和FindFull方法对比
 func TestGeoLite2MMDBFindAndFindFull(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-city-ipv4.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-city-ipv4.mmdb")
 
 	db, err := NewGeoLite2MMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -211,11 +209,11 @@ func TestGeoLite2MMDBFindAndFindFull(t *testing.T) {
 
 // TestGeoLite2MMDBIPv6FindAndFindFull 测试IPv6的FindFull方法
 func TestGeoLite2MMDBIPv6FindAndFindFull(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-city-ipv6.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-city-ipv6.mmdb")
 
 	db, err := NewGeoLite2MMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 

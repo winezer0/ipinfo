@@ -1,10 +1,12 @@
 package queryip
 
 import (
+	"context"
 	"errors"
 	"sync"
 
 	"github.com/winezer0/ipinfo/pkg/asninfo"
+	"github.com/winezer0/ipinfo/pkg/iplocate"
 	"github.com/winezer0/ipinfo/pkg/iputils"
 )
 
@@ -153,6 +155,59 @@ func (engine *DBEngine) QueryIP(ip string) *IPQueryResult {
 		return engine.queryIPv4(ip)
 	}
 	return engine.queryIPv6(ip)
+}
+
+// QueryLocation 只查询IP地理位置，不访问ASN数据库。
+func (engine *DBEngine) QueryLocation(ip string) *iplocate.IPLocate {
+	db := engine.IPv6Engine
+	if iputils.IsIPv4(ip) {
+		db = engine.IPv4Engine
+	}
+	if db == nil {
+		return nil
+	}
+	return db.FindFull(ip)
+}
+
+// QueryASN 只查询ASN，不访问地理位置数据库。
+func (engine *DBEngine) QueryASN(ip string) *asninfo.ASNInfo {
+	db, version := engine.AsnIPv6Engine, 6
+	if iputils.IsIPv4(ip) {
+		db, version = engine.AsnIPv4Engine, 4
+	}
+	if db == nil {
+		return &asninfo.ASNInfo{IP: ip, IPVersion: version, FoundASN: false}
+	}
+	return db.FindASN(ip)
+}
+
+// QueryASNContext 将请求取消传递给支持context的ASN数据库。
+func (engine *DBEngine) QueryASNContext(ctx context.Context, ip string) (*asninfo.ASNInfo, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	db := engine.AsnIPv6Engine
+	if iputils.IsIPv4(ip) {
+		db = engine.AsnIPv4Engine
+	}
+	if contextual, ok := db.(interface {
+		FindASNContext(context.Context, string) (*asninfo.ASNInfo, error)
+	}); ok {
+		return contextual.FindASNContext(ctx, ip)
+	}
+	info := engine.QueryASN(ip)
+	return info, ctx.Err()
+}
+
+// QueryIPContext 查询完整信息，并在数据库调用之间检查取消。
+func (engine *DBEngine) QueryIPContext(ctx context.Context, ip string) (*IPQueryResult, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	result := &IPQueryResult{IP: ip, IPLocate: engine.QueryLocation(ip)}
+	var err error
+	result.ASNInfo, err = engine.QueryASNContext(ctx, ip)
+	return result, err
 }
 
 // Close 关闭所有数据库连接

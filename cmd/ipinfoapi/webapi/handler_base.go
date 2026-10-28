@@ -4,10 +4,11 @@ import "github.com/winezer0/ipinfo/pkg/queryip"
 
 // APIHandler API处理器结构体
 type APIHandler struct {
-	engine *queryip.DBEngine
+	engine       *queryip.DBEngine
+	maxBatchSize int
 }
 
 // NewAPIHandler 创建API处理器实例
 func NewAPIHandler(engine *queryip.DBEngine) *APIHandler {
-	return &APIHandler{engine: engine}
+	return &APIHandler{engine: engine, maxBatchSize: 100}
 }

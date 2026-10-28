@@ -1,0 +1,87 @@
+[
+  {
+    "name": "geolite2-asn.mmdb",
+    "url": "https://raw.githubusercontent.com/winezer0/cdninfo/df297024ffabe6a8094bf0bd6481ddfcd420cc65/assets/geolite2-asn.mmdb",
+    "sha256": "5ec0a45188022863cc280bb85a8c1845435de80a380d751db893dcad12febbf0"
+  },
+  {
+    "name": "ip2region_v4.xdb",
+    "url": "https://raw.githubusercontent.com/winezer0/cdninfo/df297024ffabe6a8094bf0bd6481ddfcd420cc65/assets/ip2region_v4.xdb",
+    "sha256": "a33a75d518c0fb1ca355018bb35df1ec223d585dfae68afa2fec959dff365235"
+  },
+  {
+    "name": "ip2region_v6.xdb",
+    "url": "https://raw.githubusercontent.com/winezer0/cdninfo/df297024ffabe6a8094bf0bd6481ddfcd420cc65/assets/ip2region_v6.xdb",
+    "sha256": "d788596a7a4d278b937502c3d680253aa205d946859f0de41ed4b7b5357cb632"
+  },
+  {
+    "name": "qqwry.dat",
+    "url": "https://raw.githubusercontent.com/winezer0/cdninfo/df297024ffabe6a8094bf0bd6481ddfcd420cc65/assets/qqwry.dat",
+    "sha256": "c44aeda9ff56645f0464836c31dfda94bd55271350fe6aada18ec4cba710e0b0"
+  },
+  {
+    "name": "zxipv6wry.db",
+    "url": "https://raw.githubusercontent.com/winezer0/cdninfo/df297024ffabe6a8094bf0bd6481ddfcd420cc65/assets/zxipv6wry.db",
+    "sha256": "23ee1c3bdd6af67972857743333e180ccfa8360b6bf9406eee9a7c324b6e6fb4"
+  },
+  {
+    "name": "dbip-asn-ipv4.csv",
+    "url": "https://raw.githubusercontent.com/sapics/ip-location-db/5620b5dd5b5a7e22a765d4d5e3de1ad9e2f3e66f/dbip-asn/dbip-asn-ipv4.csv",
+    "sha256": "5ea81872c34eb99e78c262fa3fcfaf68911e04425219bf314d3c8836635f1957"
+  },
+  {
+    "name": "dbip-asn-ipv6.csv",
+    "url": "https://raw.githubusercontent.com/sapics/ip-location-db/5620b5dd5b5a7e22a765d4d5e3de1ad9e2f3e66f/dbip-asn/dbip-asn-ipv6.csv",
+    "sha256": "462fef1bfb9de5921bf3051d8290aa8074f39dcd0ea4eae72d16615f04a9bd2c"
+  },
+  {
+    "name": "dbip-asn-ipv4.mmdb",
+    "url": "https://github.com/sapics/ip-location-db/releases/download/latest/dbip-asn-ipv4.mmdb",
+    "sha256": "14537b7a23816b106f752771261888b6c8c966174cb1a3a47ed55d5f7ccfda4d"
+  },
+  {
+    "name": "dbip-asn-ipv6.mmdb",
+    "url": "https://github.com/sapics/ip-location-db/releases/download/latest/dbip-asn-ipv6.mmdb",
+    "sha256": "65fcf1c74fc561f085acff7f6e740cbb31d3c656d8b4bf4f9d25a2e52c03db22"
+  },
+  {
+    "name": "dbip-asn.mmdb",
+    "url": "https://github.com/sapics/ip-location-db/releases/download/latest/dbip-asn.mmdb",
+    "sha256": "a725d56480e1187cdd1d2fef818b0cb2014eb4c75bfd2a1bbbad7e5cecff7628"
+  },
+  {
+    "name": "dbip-city-ipv4.mmdb",
+    "url": "https://github.com/sapics/ip-location-db/releases/download/latest/dbip-city-ipv4.mmdb",
+    "sha256": "187cf7b9a928c555b483cb40a9b9fd2975b9f5a4003748064f40d8c451d17a21"
+  },
+  {
+    "name": "dbip-city-ipv6.mmdb",
+    "url": "https://github.com/sapics/ip-location-db/releases/download/latest/dbip-city-ipv6.mmdb",
+    "sha256": "d605f2416c5b1aa9a7ba84bd0fd0da671dcef3fac44db23eec869757ab480ec4"
+  },
+  {
+    "name": "geolite2-asn-ipv4.mmdb",
+    "url": "https://github.com/sapics/ip-location-db/releases/download/latest/geolite2-asn-ipv4.mmdb",
+    "sha256": "a010c8dda9454d8ebffac9f5efccc7d9cd692058279bbad955453b13d2d98152"
+  },
+  {
+    "name": "geolite2-asn-ipv6.mmdb",
+    "url": "https://github.com/sapics/ip-location-db/releases/download/latest/geolite2-asn-ipv6.mmdb",
+    "sha256": "eab468b2cac053d2f2b531b268ca5d2d5332f099f0cd3f5da934aa023ad084a9"
+  },
+  {
+    "name": "geolite2-city-ipv4.mmdb",
+    "url": "https://github.com/sapics/ip-location-db/releases/download/latest/geolite2-city-ipv4.mmdb",
+    "sha256": "cc5d28aa434df6ddc65b1f30c987dae77121e69128def5b0a712bd676142b0a0"
+  },
+  {
+    "name": "geolite2-city-ipv6.mmdb",
+    "url": "https://github.com/sapics/ip-location-db/releases/download/latest/geolite2-city-ipv6.mmdb",
+    "sha256": "70a49b1746ec85ebd62d67370a17089fff28bf3dd2060b63e494db2bb7a09a0c"
+  },
+  {
+    "name": "qqwry.ipdb",
+    "url": "https://unpkg.com/qqwry.ipdb@2026.10.21/qqwry.ipdb",
+    "sha256": "e52e9f7ef9972c25ff437853732dcbe971fe788702caef7489bf80950235fc54"
+  }
+]

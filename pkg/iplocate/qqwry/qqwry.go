@@ -102,7 +102,12 @@ func (db *Ipv4Location) find(query string) (result *wry.Result, err error) {
 
 	// 解析结果
 	reader := wry.NewReader(db.Data)
-	reader.Parse(offset + 4)
+	if uint64(offset)+4 >= uint64(len(db.Data)) {
+		return nil, iplocate.ErrInvalidDBFile
+	}
+	if err := reader.Parse(offset + 4); err != nil {
+		return nil, err
+	}
 	return reader.Result.DecodeGBK(), nil
 }
 
@@ -173,12 +178,12 @@ func checkIPv4File(data []byte) bool {
 	end := binary.LittleEndian.Uint32(header[4:])
 
 	// 验证索引范围
-	if start >= end {
+	if start < 8 || start > end || (end-start)%7 != 0 {
 		return false
 	}
 
 	// 验证数据完整性
-	if uint32(len(data)) < end+7 {
+	if uint64(len(data)) < uint64(end)+7 {
 		return false
 	}
 

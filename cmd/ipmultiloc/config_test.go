@@ -9,7 +9,7 @@ import (
 // TestLoadConfig 测试配置文件加载
 func TestLoadConfig(t *testing.T) {
 	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "iplocate2.yaml")
+	configPath := filepath.Join(tempDir, AppName+".yaml")
 	configContent := `
 ip_locate_dbs:
   - "assets/qqwry.dat"
@@ -26,7 +26,7 @@ ip_locate_dbs:
 		t.Fatalf("切换目录失败: %v", err)
 	}
 
-	config, err := LoadConfig("iplocate2")
+	config, err := LoadConfig(AppName)
 	if err != nil {
 		t.Fatalf("加载配置失败: %v", err)
 	}
@@ -45,7 +45,7 @@ ip_locate_dbs:
 // TestLoadConfig_Empty 测试空配置文件
 func TestLoadConfig_Empty(t *testing.T) {
 	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "iplocate2.yaml")
+	configPath := filepath.Join(tempDir, AppName+".yaml")
 	if err := os.WriteFile(configPath, []byte(""), 0644); err != nil {
 		t.Fatalf("创建测试配置文件失败: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestLoadConfig_Empty(t *testing.T) {
 		t.Fatalf("切换目录失败: %v", err)
 	}
 
-	config, err := LoadConfig("iplocate2")
+	config, err := LoadConfig(AppName)
 	if err != nil {
 		t.Fatalf("加载空配置失败: %v", err)
 	}

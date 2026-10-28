@@ -20,12 +20,12 @@ func (h *APIHandler) HandleIP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := h.engine.QueryIP(validIP)
-	if result.IPLocate == nil {
+	result := h.engine.QueryLocation(validIP)
+	if result == nil {
 		WriteError(w, http.StatusInternalServerError, CodeQueryFailed, "查询IP位置信息失败")
 		return
 	}
 
-	data := ConvertIPLocate(result.IPLocate)
+	data := ConvertIPLocate(result)
 	WriteSuccess(w, data)
 }

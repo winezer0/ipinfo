@@ -80,40 +80,7 @@ type GeoRecord struct {
 func (m *GeoLite2MMDB) FindFull(query string) *iplocate.IPLocate {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-
-	result := &iplocate.IPLocate{
-		IP: query,
-	}
-
-	ip := net.ParseIP(query)
-	if ip == nil {
-		return result
-	}
-
-	if ip.To4() != nil {
-		result.Version = 4
-	} else {
-		result.Version = 6
-	}
-
-	var record GeoRecord
-	err := m.db.Lookup(ip, &record)
-	if err != nil {
-		return result
-	}
-
-	result.Country = record.CountryCode
-	result.Location = formatGeoRecord(record)
-
-	if record.State1 != "" {
-		result.Province = record.State1
-	}
-
-	if record.City != "" {
-		result.City = record.City
-	}
-
-	return result
+	return m.findFullInternal(query)
 }
 
 // BatchFindFull 批量查询多个IP地址,返回更结构化的地址信息
@@ -147,6 +114,9 @@ func (m *GeoLite2MMDB) findFullInternal(query string) *iplocate.IPLocate {
 		result.Version = 6
 	}
 
+	if m.db == nil {
+		return result
+	}
 	var record GeoRecord
 	err := m.db.Lookup(ip, &record)
 	if err != nil {
@@ -154,17 +124,14 @@ func (m *GeoLite2MMDB) findFullInternal(query string) *iplocate.IPLocate {
 	}
 
 	result.Country = record.CountryCode
+	result.Location = formatGeoRecord(record)
 
 	if record.State1 != "" {
-		result.City = record.State1
+		result.Province = record.State1
 	}
 
 	if record.City != "" {
-		if result.City != "" {
-			result.Area = record.City
-		} else {
-			result.City = record.City
-		}
+		result.City = record.City
 	}
 
 	return result

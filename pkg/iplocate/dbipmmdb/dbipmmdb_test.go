@@ -2,25 +2,23 @@
 package dbipmmdb
 
 import (
+	"github.com/winezer0/ipinfo/internal/testassets"
 	"github.com/winezer0/ipinfo/pkg/iplocate"
-	"path/filepath"
-	"runtime"
 	"testing"
 )
 
-func getTestDBPath(dbname string) string {
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..", "..")
-	return filepath.Join(projectRoot, "assets", dbname)
+func getTestDBPath(t testing.TB, dbname string) string {
+	t.Helper()
+	return testassets.Path(t, dbname)
 }
 
 // TestDBIPMMDBIPv4 测试DBIP IPv4数据库查询
 func TestDBIPMMDBIPv4(t *testing.T) {
-	dbPath := getTestDBPath("dbip-city-ipv4.mmdb")
+	dbPath := getTestDBPath(t, "dbip-city-ipv4.mmdb")
 
 	db, err := NewDBIPMMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -45,11 +43,11 @@ func TestDBIPMMDBIPv4(t *testing.T) {
 
 // TestDBIPMMDBIPv6 测试DBIP IPv6数据库查询
 func TestDBIPMMDBIPv6(t *testing.T) {
-	dbPath := getTestDBPath("dbip-city-ipv6.mmdb")
+	dbPath := getTestDBPath(t, "dbip-city-ipv6.mmdb")
 
 	db, err := NewDBIPMMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -73,11 +71,11 @@ func TestDBIPMMDBIPv6(t *testing.T) {
 
 // TestDBIPMMDBDualStack 测试DBIP双栈数据库查询
 func TestDBIPMMDBDualStack(t *testing.T) {
-	dbPath := getTestDBPath("dbip-city-ipv4.mmdb")
+	dbPath := getTestDBPath(t, "dbip-city-ipv4.mmdb")
 
 	db, err := NewDBIPMMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -102,11 +100,11 @@ func TestDBIPMMDBDualStack(t *testing.T) {
 
 // TestDBIPMMDBBatchFindFull 测试批量查询
 func TestDBIPMMDBBatchFindFull(t *testing.T) {
-	dbPath := getTestDBPath("dbip-city-ipv4.mmdb")
+	dbPath := getTestDBPath(t, "dbip-city-ipv4.mmdb")
 
 	db, err := NewDBIPMMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -128,11 +126,11 @@ func TestDBIPMMDBBatchFindFull(t *testing.T) {
 
 // TestDBIPMMDBInvalidIP 测试无效IP查询
 func TestDBIPMMDBInvalidIP(t *testing.T) {
-	dbPath := getTestDBPath("dbip-city-ipv4.mmdb")
+	dbPath := getTestDBPath(t, "dbip-city-ipv4.mmdb")
 
 	db, err := NewDBIPMMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -168,11 +166,11 @@ func TestDBIPMMDBNonExistentFile(t *testing.T) {
 
 // TestDBIPMMDBDatabaseType 测试数据库类型常量
 func TestDBIPMMDBDatabaseType(t *testing.T) {
-	dbPath := getTestDBPath("dbip-city-ipv4.mmdb")
+	dbPath := getTestDBPath(t, "dbip-city-ipv4.mmdb")
 
 	db, err := NewDBIPMMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -184,11 +182,11 @@ func TestDBIPMMDBDatabaseType(t *testing.T) {
 
 // TestDBIPMMDBFindFull 测试FindFull方法
 func TestDBIPMMDBFindFull(t *testing.T) {
-	dbPath := getTestDBPath("dbip-city-ipv4.mmdb")
+	dbPath := getTestDBPath(t, "dbip-city-ipv4.mmdb")
 
 	db, err := NewDBIPMMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 

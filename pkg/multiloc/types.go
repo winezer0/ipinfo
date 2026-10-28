@@ -1,4 +1,4 @@
-package queryip2
+package multiloc
 
 import (
 	"github.com/winezer0/ipinfo/pkg/iplocate"

@@ -1,21 +1,19 @@
 package asnmmdb
 
 import (
+	"github.com/winezer0/ipinfo/internal/testassets"
 	"net"
-	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 )
 
-func getTestDBPath(dbname string) string {
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..", "..")
-	return filepath.Join(projectRoot, "assets", dbname)
+func getTestDBPath(t testing.TB, dbname string) string {
+	t.Helper()
+	return testassets.Path(t, dbname)
 }
 
 func TestMMDBManager_FindASN(t *testing.T) {
-	asnIpvxDb := getTestDBPath("geolite2-asn.mmdb")
+	asnIpvxDb := getTestDBPath(t, "geolite2-asn.mmdb")
 	config := &MMDBConfig{
 		AsnIpvxDb:            asnIpvxDb,
 		MaxConcurrentQueries: 100,
@@ -68,7 +66,7 @@ func TestMMDBManager_FindASN(t *testing.T) {
 }
 
 func TestMMDBManager_ASNToIPRanges(t *testing.T) {
-	asnIpvxDb := getTestDBPath("geolite2-asn.mmdb")
+	asnIpvxDb := getTestDBPath(t, "geolite2-asn.mmdb")
 	config := &MMDBConfig{
 		AsnIpvxDb:            asnIpvxDb,
 		MaxConcurrentQueries: 100,
@@ -99,7 +97,7 @@ func TestMMDBManager_ASNToIPRanges(t *testing.T) {
 }
 
 func TestMMDBManager_BatchFindASN(t *testing.T) {
-	asnIpvxDb := getTestDBPath("geolite2-asn.mmdb")
+	asnIpvxDb := getTestDBPath(t, "geolite2-asn.mmdb")
 	config := &MMDBConfig{
 		AsnIpvxDb:            asnIpvxDb,
 		MaxConcurrentQueries: 100,
@@ -112,7 +110,7 @@ func TestMMDBManager_BatchFindASN(t *testing.T) {
 
 	// 初始化数据库连接
 	if err := manager.InitMMDBConn(); err != nil {
-		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
+		t.Fatalf("无法加载集成数据库: %v", err)
 	}
 	defer manager.Close()
 
@@ -178,7 +176,7 @@ func TestAllASNDatabases(t *testing.T) {
 
 	for _, dbFile := range dbFiles {
 		t.Run(dbFile.name, func(t *testing.T) {
-			dbPath := getTestDBPath(dbFile.filename)
+			dbPath := getTestDBPath(t, dbFile.filename)
 
 			// 创建配置
 			config := &MMDBConfig{
@@ -188,11 +186,11 @@ func TestAllASNDatabases(t *testing.T) {
 
 			manager, err := NewMMDBManager(config)
 			if err != nil {
-				t.Skipf("跳过测试，创建管理器失败: %v", err)
+				t.Fatalf("创建集成数据库管理器失败: %v", err)
 			}
 
 			if err := manager.InitMMDBConn(); err != nil {
-				t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+				t.Fatalf("数据库初始化失败: %v", err)
 			}
 			defer manager.Close()
 
@@ -233,7 +231,7 @@ func TestASNDatabasesIPv4Only(t *testing.T) {
 
 	for _, dbFile := range ipv4DBs {
 		t.Run(dbFile, func(t *testing.T) {
-			dbPath := getTestDBPath(dbFile)
+			dbPath := getTestDBPath(t, dbFile)
 
 			config := &MMDBConfig{
 				AsnIpvxDb:            dbPath,
@@ -242,10 +240,10 @@ func TestASNDatabasesIPv4Only(t *testing.T) {
 
 			manager, err := NewMMDBManager(config)
 			if err != nil {
-				t.Skipf("跳过测试，创建管理器失败: %v", err)
+				t.Fatalf("创建集成数据库管理器失败: %v", err)
 			}
 			if err := manager.InitMMDBConn(); err != nil {
-				t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+				t.Fatalf("数据库初始化失败: %v", err)
 			}
 			defer manager.Close()
 
@@ -275,7 +273,7 @@ func TestASNDatabasesIPv6Only(t *testing.T) {
 
 	for _, dbFile := range ipv6DBs {
 		t.Run(dbFile, func(t *testing.T) {
-			dbPath := getTestDBPath(dbFile)
+			dbPath := getTestDBPath(t, dbFile)
 
 			config := &MMDBConfig{
 				AsnIpvxDb:            dbPath,
@@ -284,10 +282,10 @@ func TestASNDatabasesIPv6Only(t *testing.T) {
 
 			manager, err := NewMMDBManager(config)
 			if err != nil {
-				t.Skipf("跳过测试，创建管理器失败: %v", err)
+				t.Fatalf("创建集成数据库管理器失败: %v", err)
 			}
 			if err := manager.InitMMDBConn(); err != nil {
-				t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+				t.Fatalf("数据库初始化失败: %v", err)
 			}
 			defer manager.Close()
 
@@ -319,7 +317,7 @@ func TestASNDatabasesDualStack(t *testing.T) {
 
 	for _, dbFile := range dualDBs {
 		t.Run(dbFile, func(t *testing.T) {
-			dbPath := getTestDBPath(dbFile)
+			dbPath := getTestDBPath(t, dbFile)
 
 			config := &MMDBConfig{
 				AsnIpvxDb:            dbPath,
@@ -328,10 +326,10 @@ func TestASNDatabasesDualStack(t *testing.T) {
 
 			manager, err := NewMMDBManager(config)
 			if err != nil {
-				t.Skipf("跳过测试，创建管理器失败: %v", err)
+				t.Fatalf("创建集成数据库管理器失败: %v", err)
 			}
 			if err := manager.InitMMDBConn(); err != nil {
-				t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+				t.Fatalf("数据库初始化失败: %v", err)
 			}
 			defer manager.Close()
 
@@ -363,7 +361,7 @@ func TestMMDBManager_GetDatabaseInfo(t *testing.T) {
 
 	for _, dbFile := range dbFiles {
 		t.Run(dbFile.name, func(t *testing.T) {
-			dbPath := getTestDBPath(dbFile.filename)
+			dbPath := getTestDBPath(t, dbFile.filename)
 
 			config := &MMDBConfig{
 				AsnIpvxDb:            dbPath,
@@ -372,7 +370,7 @@ func TestMMDBManager_GetDatabaseInfo(t *testing.T) {
 
 			manager, err := NewMMDBManager(config)
 			if err != nil {
-				t.Skipf("跳过测试，创建管理器失败: %v", err)
+				t.Fatalf("创建集成数据库管理器失败: %v", err)
 			}
 
 			// 测试初始化前的数据库信息
@@ -386,7 +384,7 @@ func TestMMDBManager_GetDatabaseInfo(t *testing.T) {
 
 			// 初始化数据库
 			if err := manager.InitMMDBConn(); err != nil {
-				t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+				t.Fatalf("数据库初始化失败: %v", err)
 			}
 			defer manager.Close()
 
@@ -423,7 +421,7 @@ func TestMMDBManager_ASNToIPRangesLazyLoad(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			dbPath := getTestDBPath(tc.dbFile)
+			dbPath := getTestDBPath(t, tc.dbFile)
 
 			config := &MMDBConfig{
 				AsnIpvxDb:            dbPath,
@@ -432,11 +430,11 @@ func TestMMDBManager_ASNToIPRangesLazyLoad(t *testing.T) {
 
 			manager, err := NewMMDBManager(config)
 			if err != nil {
-				t.Skipf("跳过测试，创建管理器失败: %v", err)
+				t.Fatalf("创建集成数据库管理器失败: %v", err)
 			}
 
 			if err := manager.InitMMDBConn(); err != nil {
-				t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+				t.Fatalf("数据库初始化失败: %v", err)
 			}
 			defer manager.Close()
 
@@ -475,7 +473,7 @@ func TestMMDBManager_ASNToIPRangesLazyLoad(t *testing.T) {
 
 // TestMMDBManager_LazyLoadCombined 测试懒加载综合场景
 func TestMMDBManager_LazyLoadCombined(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-asn.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-asn.mmdb")
 
 	config := &MMDBConfig{
 		AsnIpvxDb:            dbPath,
@@ -484,11 +482,11 @@ func TestMMDBManager_LazyLoadCombined(t *testing.T) {
 
 	manager, err := NewMMDBManager(config)
 	if err != nil {
-		t.Skipf("跳过测试，创建管理器失败: %v", err)
+		t.Fatalf("创建集成数据库管理器失败: %v", err)
 	}
 
 	if err := manager.InitMMDBConn(); err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer manager.Close()
 

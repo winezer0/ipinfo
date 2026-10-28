@@ -1,23 +1,22 @@
-package queryip2
+package multiloc
 
 import (
-	"github.com/winezer0/ipinfo/pkg/iplocate"
-	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/winezer0/ipinfo/internal/testassets"
+	"github.com/winezer0/ipinfo/pkg/iplocate"
 )
 
 // getTestDBPath 获取测试数据库文件路径
-func getTestDBPath(dbname string) string {
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..")
-	return filepath.Join(projectRoot, "assets", dbname)
+func getTestDBPath(t testing.TB, dbname string) string {
+	t.Helper()
+	return testassets.Path(t, dbname)
 }
 
 // TestInitDBEngines_SingleDB 测试单数据库初始化
 func TestInitDBEngines_SingleDB(t *testing.T) {
 	config := &IPDbConfig{
-		IpLocateDbs: []string{getTestDBPath("qqwry.dat")},
+		IpLocateDbs: []string{getTestDBPath(t, "qqwry.dat")},
 	}
 
 	engine, err := InitDBEngines(config)
@@ -38,8 +37,8 @@ func TestInitDBEngines_SingleDB(t *testing.T) {
 func TestInitDBEngines_MultipleDBs(t *testing.T) {
 	config := &IPDbConfig{
 		IpLocateDbs: []string{
-			getTestDBPath("qqwry.dat"),
-			getTestDBPath("qqwry.ipdb"),
+			getTestDBPath(t, "qqwry.dat"),
+			getTestDBPath(t, "qqwry.ipdb"),
 		},
 	}
 
@@ -73,14 +72,14 @@ func TestInitDBEngines_NoDB(t *testing.T) {
 func TestQuerySingleIP(t *testing.T) {
 	config := &IPDbConfig{
 		IpLocateDbs: []string{
-			getTestDBPath("qqwry.dat"),
-			getTestDBPath("qqwry.ipdb"),
+			getTestDBPath(t, "qqwry.dat"),
+			getTestDBPath(t, "qqwry.ipdb"),
 		},
 	}
 
 	engine, err := InitDBEngines(config)
 	if err != nil {
-		t.Skipf("跳过测试，数据库加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer engine.Close()
 
@@ -112,14 +111,14 @@ func TestQuerySingleIP(t *testing.T) {
 func TestQueryIPInfo(t *testing.T) {
 	config := &IPDbConfig{
 		IpLocateDbs: []string{
-			getTestDBPath("qqwry.dat"),
-			getTestDBPath("qqwry.ipdb"),
+			getTestDBPath(t, "qqwry.dat"),
+			getTestDBPath(t, "qqwry.ipdb"),
 		},
 	}
 
 	engine, err := InitDBEngines(config)
 	if err != nil {
-		t.Skipf("跳过测试，数据库加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer engine.Close()
 

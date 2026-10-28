@@ -72,7 +72,7 @@ func (db *Ipv6Location) Init() error {
 	db.IPLen = ipLen
 	db.IPCnt = counts
 	db.IdxStart = start
-	db.IdxEnd = end
+	db.IdxEnd = end - 11
 
 	return nil
 }
@@ -94,7 +94,7 @@ func (db *Ipv6Location) find(query string) (result *wry.Result, err error) {
 	}
 
 	ip6 := ip.To16()
-	if ip6 == nil {
+	if ip6 == nil || ip.To4() != nil {
 		return nil, errors.New("无效的IPv6地址")
 	}
 
@@ -110,7 +110,9 @@ func (db *Ipv6Location) find(query string) (result *wry.Result, err error) {
 
 	// 解析结果
 	reader := wry.NewReader(db.Data)
-	reader.Parse(offset)
+	if err := reader.Parse(offset); err != nil {
+		return nil, err
+	}
 	return &reader.Result, nil
 }
 
@@ -214,17 +216,12 @@ func checkIPv6File(data []byte) bool {
 
 	// 解析头部信息
 	header := data[:24]
-	start := binary.LittleEndian.Uint64(header[16:24])
-	counts := binary.LittleEndian.Uint64(header[8:16])
-	end := start + counts*11
-
-	// 验证索引范围
-	if start >= end {
+	if header[6] != 3 || header[7] != 8 {
 		return false
 	}
-
-	// 验证数据完整性
-	if uint64(len(data)) < end {
+	start := binary.LittleEndian.Uint64(header[16:24])
+	counts := binary.LittleEndian.Uint64(header[8:16])
+	if start < 24 || start > uint64(len(data)) || counts == 0 || counts > (uint64(len(data))-start)/11 {
 		return false
 	}
 

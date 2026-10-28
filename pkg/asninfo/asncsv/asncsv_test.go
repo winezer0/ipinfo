@@ -2,25 +2,23 @@
 package asncsv
 
 import (
-	"path/filepath"
-	"runtime"
+	"github.com/winezer0/ipinfo/internal/testassets"
 	"testing"
 	"time"
 )
 
-func getTestDBPath(dbname string) string {
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..", "..")
-	return filepath.Join(projectRoot, "assets", dbname)
+func getTestDBPath(t testing.TB, dbname string) string {
+	t.Helper()
+	return testassets.Path(t, dbname)
 }
 
 // TestASNCsvIPv4 测试CSV格式IPv4数据库查询
 func TestASNCsvIPv4(t *testing.T) {
-	dbPath := getTestDBPath("dbip-asn-ipv4.csv")
+	dbPath := getTestDBPath(t, "dbip-asn-ipv4.csv")
 
 	querier := NewASNCsvQuerier(dbPath)
 	if err := querier.Init(); err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer querier.Close()
 
@@ -43,11 +41,11 @@ func TestASNCsvIPv4(t *testing.T) {
 
 // TestASNCsvIPv6 测试CSV格式IPv6数据库查询
 func TestASNCsvIPv6(t *testing.T) {
-	dbPath := getTestDBPath("dbip-asn-ipv6.csv")
+	dbPath := getTestDBPath(t, "dbip-asn-ipv6.csv")
 
 	querier := NewASNCsvQuerier(dbPath)
 	if err := querier.Init(); err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer querier.Close()
 
@@ -69,11 +67,11 @@ func TestASNCsvIPv6(t *testing.T) {
 
 // TestASNCsvBatchFind 测试批量查询
 func TestASNCsvBatchFind(t *testing.T) {
-	dbPath := getTestDBPath("dbip-asn-ipv4.csv")
+	dbPath := getTestDBPath(t, "dbip-asn-ipv4.csv")
 
 	querier := NewASNCsvQuerier(dbPath)
 	if err := querier.Init(); err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer querier.Close()
 
@@ -101,11 +99,11 @@ func TestASNCsvBatchFind(t *testing.T) {
 
 // TestASNCsvInvalidIP 测试无效IP查询
 func TestASNCsvInvalidIP(t *testing.T) {
-	dbPath := getTestDBPath("dbip-asn-ipv4.csv")
+	dbPath := getTestDBPath(t, "dbip-asn-ipv4.csv")
 
 	querier := NewASNCsvQuerier(dbPath)
 	if err := querier.Init(); err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer querier.Close()
 
@@ -147,11 +145,11 @@ func TestASNCsvNonExistentFile(t *testing.T) {
 
 // TestASNCsvASNToIPRanges 测试ASN反查IP范围
 func TestASNCsvASNToIPRanges(t *testing.T) {
-	dbPath := getTestDBPath("dbip-asn-ipv4.csv")
+	dbPath := getTestDBPath(t, "dbip-asn-ipv4.csv")
 
 	querier := NewASNCsvQuerier(dbPath)
 	if err := querier.Init(); err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer querier.Close()
 
@@ -169,7 +167,7 @@ func TestASNCsvASNToIPRanges(t *testing.T) {
 
 // TestASNCsvIsInitialized 测试初始化状态检查
 func TestASNCsvIsInitialized(t *testing.T) {
-	dbPath := getTestDBPath("dbip-asn-ipv4.csv")
+	dbPath := getTestDBPath(t, "dbip-asn-ipv4.csv")
 
 	querier := NewASNCsvQuerier(dbPath)
 
@@ -178,7 +176,7 @@ func TestASNCsvIsInitialized(t *testing.T) {
 	}
 
 	if err := querier.Init(); err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer querier.Close()
 
@@ -199,7 +197,7 @@ func TestASNCsvGetDatabaseInfo(t *testing.T) {
 
 	for _, dbFile := range dbFiles {
 		t.Run(dbFile.name, func(t *testing.T) {
-			dbPath := getTestDBPath(dbFile.filename)
+			dbPath := getTestDBPath(t, dbFile.filename)
 
 			querier := NewASNCsvQuerier(dbPath)
 
@@ -214,7 +212,7 @@ func TestASNCsvGetDatabaseInfo(t *testing.T) {
 
 			// 初始化数据库
 			if err := querier.Init(); err != nil {
-				t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+				t.Fatalf("数据库初始化失败: %v", err)
 			}
 			defer querier.Close()
 
@@ -256,11 +254,11 @@ func TestASNCsv_ASNToIPRangesLazyLoad(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			dbPath := getTestDBPath(tc.dbFile)
+			dbPath := getTestDBPath(t, tc.dbFile)
 
 			querier := NewASNCsvQuerier(dbPath)
 			if err := querier.Init(); err != nil {
-				t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+				t.Fatalf("数据库初始化失败: %v", err)
 			}
 			defer querier.Close()
 
@@ -299,11 +297,11 @@ func TestASNCsv_ASNToIPRangesLazyLoad(t *testing.T) {
 
 // TestASNCsv_LazyLoadCombined 测试懒加载综合场景
 func TestASNCsv_LazyLoadCombined(t *testing.T) {
-	dbPath := getTestDBPath("dbip-asn-ipv4.csv")
+	dbPath := getTestDBPath(t, "dbip-asn-ipv4.csv")
 
 	querier := NewASNCsvQuerier(dbPath)
 	if err := querier.Init(); err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer querier.Close()
 

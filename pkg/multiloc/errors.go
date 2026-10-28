@@ -1,4 +1,4 @@
-package queryip2
+package multiloc
 
 import "errors"
 

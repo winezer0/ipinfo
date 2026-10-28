@@ -4,11 +4,11 @@ import "testing"
 
 // TestDBIPMMDBParseGeoLite2IPv4 测试解析GeoLite2 IPv4数据库
 func TestDBIPMMDBParseGeoLite2IPv4(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-city-ipv4.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-city-ipv4.mmdb")
 
 	db, err := NewDBIPMMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
@@ -33,11 +33,11 @@ func TestDBIPMMDBParseGeoLite2IPv4(t *testing.T) {
 
 // TestDBIPMMDBParseGeoLite2IPv6 测试解析GeoLite2 IPv6数据库
 func TestDBIPMMDBParseGeoLite2IPv6(t *testing.T) {
-	dbPath := getTestDBPath("geolite2-city-ipv6.mmdb")
+	dbPath := getTestDBPath(t, "geolite2-city-ipv6.mmdb")
 
 	db, err := NewDBIPMMDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 

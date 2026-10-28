@@ -20,12 +20,19 @@ func (h *APIHandler) HandleASN(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := h.engine.QueryIP(validIP)
-	if result.ASNInfo == nil {
+	result, err := h.engine.QueryASNContext(r.Context(), validIP)
+	if r.Context().Err() != nil {
+		return
+	}
+	if err != nil {
+		WriteError(w, http.StatusServiceUnavailable, CodeQueryFailed, "查询ASN数据库失败")
+		return
+	}
+	if result == nil {
 		WriteError(w, http.StatusInternalServerError, CodeQueryFailed, "查询ASN信息失败")
 		return
 	}
 
-	data := ConvertASN(result.ASNInfo)
+	data := ConvertASN(result)
 	WriteSuccess(w, data)
 }

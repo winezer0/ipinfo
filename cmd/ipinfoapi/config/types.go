@@ -1,13 +1,14 @@
 package config
 
-import "github.com/winezer0/downutils/downutils"
+import "github.com/winezer0/downutils"
 
 // ServerConfig server configuration structure
 type ServerConfig struct {
-	Auth      AuthConfig           `yaml:"auth"`
-	HTTP      HTTPConfig           `yaml:"http"`
-	Log       LogConfig            `yaml:"log"`
-	Databases []downutils.DownItem `yaml:"databases"`
+	XDBPoolSize int                  `yaml:"xdb_pool_size"`
+	Auth        AuthConfig           `yaml:"auth"`
+	HTTP        HTTPConfig           `yaml:"http"`
+	Log         LogConfig            `yaml:"log"`
+	Databases   []downutils.DownItem `yaml:"databases"`
 }
 
 // AuthConfig authentication configuration structure
@@ -18,14 +19,16 @@ type AuthConfig struct {
 
 // HTTPConfig HTTP service configuration structure
 type HTTPConfig struct {
-	Enable       bool   `yaml:"enable"`
-	Port         int    `yaml:"port"`
-	HTTPS        bool   `yaml:"https"`
-	CertFile     string `yaml:"cert_file"`
-	KeyFile      string `yaml:"key_file"`
-	ReadTimeout  int    `yaml:"read_timeout"`
-	WriteTimeout int    `yaml:"write_timeout"`
-	IdleTimeout  int    `yaml:"idle_timeout"`
+	Enable         bool     `yaml:"enable"`
+	Port           int      `yaml:"port"`
+	HTTPS          bool     `yaml:"https"`
+	CertFile       string   `yaml:"cert_file"`
+	KeyFile        string   `yaml:"key_file"`
+	ReadTimeout    int      `yaml:"read_timeout"`
+	WriteTimeout   int      `yaml:"write_timeout"`
+	IdleTimeout    int      `yaml:"idle_timeout"`
+	MaxBatchSize   int      `yaml:"max_batch_size"`
+	TrustedProxies []string `yaml:"trusted_proxies"`
 }
 
 // LogConfig logging configuration structure

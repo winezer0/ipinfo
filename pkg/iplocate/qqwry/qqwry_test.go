@@ -2,25 +2,23 @@ package qqwry
 
 import (
 	"encoding/binary"
+	"github.com/winezer0/ipinfo/internal/testassets"
 	"github.com/winezer0/ipinfo/pkg/utils"
 	"net"
-	"path/filepath"
-	"runtime"
 	"testing"
 )
 
-func getTestDBPath(dbname string) string {
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..", "..")
-	return filepath.Join(projectRoot, "assets", dbname)
+func getTestDBPath(t testing.TB, dbname string) string {
+	t.Helper()
+	return testassets.Path(t, dbname)
 }
 
 func TestIpv4Location_FindFull(t *testing.T) {
 	// 集成测试：测试完整的查询流程
-	dbpath := getTestDBPath("qqwry.dat")
+	dbpath := getTestDBPath(t, "qqwry.dat")
 	db, err := NewQQWryDB(dbpath)
 	if err != nil {
-		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
+		t.Fatalf("无法加载集成数据库: %v", err)
 	}
 	defer db.Close()
 
@@ -47,10 +45,10 @@ func TestIpv4Location_FindFull(t *testing.T) {
 }
 
 func TestIpv4Location_BatchFindFull(t *testing.T) {
-	dbpath := getTestDBPath("qqwry.dat")
+	dbpath := getTestDBPath(t, "qqwry.dat")
 	db, err := NewQQWryDB(dbpath)
 	if err != nil {
-		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
+		t.Fatalf("无法加载集成数据库: %v", err)
 	}
 	defer db.Close()
 
@@ -74,10 +72,10 @@ func TestIpv4Location_BatchFindFull(t *testing.T) {
 }
 
 func TestIpv4Location_GetDatabaseInfo(t *testing.T) {
-	dbpath := getTestDBPath("qqwry.dat")
+	dbpath := getTestDBPath(t, "qqwry.dat")
 	db, err := NewQQWryDB(dbpath)
 	if err != nil {
-		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
+		t.Fatalf("无法加载集成数据库: %v", err)
 	}
 	defer db.Close()
 
@@ -100,7 +98,7 @@ func TestIpv4Location_GetDatabaseInfo(t *testing.T) {
 
 // TestAnalyzeQQWryIPv6Support 分析qqwry.dat数据库是否支持IPv6
 func TestAnalyzeQQWryIPv6Support(t *testing.T) {
-	dbpath := getTestDBPath("qqwry.dat")
+	dbpath := getTestDBPath(t, "qqwry.dat")
 
 	// 读取数据库文件
 	fileData, err := utils.ReadFileBytes(dbpath)
@@ -168,9 +166,9 @@ func analyzeDatabaseHeader(t *testing.T, data []byte) {
 // testIPv6Queries 测试IPv6地址查询
 func testIPv6Queries(t *testing.T, data []byte) {
 	t.Run("测试IPv6地址查询", func(t *testing.T) {
-		db, err := NewQQWryDB(getTestDBPath("qqwry.dat"))
+		db, err := NewQQWryDB(getTestDBPath(t, "qqwry.dat"))
 		if err != nil {
-			t.Skipf("跳过测试，因为无法加载数据库: %v", err)
+			t.Fatalf("无法加载集成数据库: %v", err)
 		}
 		defer db.Close()
 
@@ -247,11 +245,11 @@ func testDatabaseFormatValidation(t *testing.T, data []byte) {
 
 // TestQQWryFindAndFindFull 测试Find和FindFull方法对比
 func TestQQWryFindAndFindFull(t *testing.T) {
-	dbPath := getTestDBPath("qqwry.dat")
+	dbPath := getTestDBPath(t, "qqwry.dat")
 
 	db, err := NewQQWryDB(dbPath)
 	if err != nil {
-		t.Skipf("跳过测试，数据库文件加载失败: %v", err)
+		t.Fatalf("数据库初始化失败: %v", err)
 	}
 	defer db.Close()
 
